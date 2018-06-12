@@ -1,0 +1,27 @@
+{
+  "name": "egnyte-resellers",
+  "version": "1.0.1",
+  "description": "Library for managing things against the undocumented egnyte resellers API.",
+  "homepage": "https://github.com/zenion/egnyte-resellers-node",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "egnyte",
+    "resellers",
+    "msp"
+  ],
+  "author": "Josh Stout <joshstout@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "isomorphic-fetch": "^2.2.1"
+  },
+  "engines": {
+    "node": ">=7.10.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zenion/egnyte-resellers-node"
+  }
+}
