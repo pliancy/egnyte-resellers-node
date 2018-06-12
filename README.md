@@ -11,7 +11,8 @@ Basic usage:
 ```js
 const Egnyte = require('egnyte-resellers')
 
-// create an instance of the egnyte class
+// create an instance of the Egnyte class
+// supply username and password used to login to egnyte resellers portal (https://resellers.egnyte.com)
 let egnyte = new Egnyte({
   username: 'myusername@company.com',
   password: 'mydefinitelygoodpassword'
