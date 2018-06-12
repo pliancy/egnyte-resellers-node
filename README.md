@@ -2,6 +2,8 @@
 
 Library for managing things against the undocumented egnyte resellers API.
 
+All methods are implemented in async/await so use you must use async/await or promises to interact with them. Below examples show promise.then().catch() syntax for clarity
+
 I made this to solve my own problems of automating modifications to a resellers account for egnyte. Use at your own risk.
 
 Basic usage:
@@ -21,7 +23,7 @@ let egnyte = new Egnyte({
 // [
 //   ...
 //   {
-//     "customerEgnyteId": "mycustomersname",
+//     "customerEgnyteId": "thecustomerid",
 //     "powerUsers": {
 //       "total": 5,
 //       "active": 1,
@@ -36,6 +38,15 @@ let egnyte = new Egnyte({
 // ]
 //
 egnyte.getAllCustomers()
+  .then(result => {
+    // do something with result
+  })
+  .catch(err => {
+    // handle your errors friends!
+  })
+
+// get a single customer instead of an array of them
+egnyte.getOneCustomer('thecustomerid')
   .then(result => {
     // do something with result
   })
@@ -58,6 +69,28 @@ egnyte.getAvailableLicensing()
   .catch(err => {
     // handle your errors friends!
   })
-```
 
-this is still unfinished... need to do more than read things. will finish soonish...
+// updates a customer's power user count
+// since egnyte doesn't do it for whatever genius reason, we'll do validation to ensure you can't set this to less than the current in-use number of users
+//
+// sets thecustomerid to 20 user count
+egnyte.updateCustomerPowerUsers('thecustomerid', 20)
+  .then(result => {
+    // do something with result
+  })
+  .catch(err => {
+    // handle your errors friends!
+  })
+
+// updates a customer's storage GB count
+// since egnyte doesn't do it for whatever genius reason, we'll do validation to ensure you can't set this to less than the current in-use GB of storage
+//
+// sets thecustomerid to 500GB storage allocation
+egnyte.updateCustomerStorage('thecustomerid', 500)
+  .then(result => {
+    // do something with result
+  })
+  .catch(err => {
+    // handle your errors friends!
+  })
+```
