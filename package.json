@@ -23,5 +23,15 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/zenion/egnyte-resellers-node"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.3",
+    "babel-env": "^2.4.1",
+    "babel-jest": "^23.0.1",
+    "babel-plugin-rewire": "^1.1.0",
+    "babel-template": "^6.26.0",
+    "babel-types": "^6.26.0",
+    "jest": "^23.1.0"
   }
 }
