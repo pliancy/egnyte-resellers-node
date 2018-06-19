@@ -1,11 +1,16 @@
 {
   "name": "egnyte-resellers",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Library for managing things against the undocumented egnyte resellers API.",
   "homepage": "https://github.com/zenion/egnyte-resellers-node",
-  "main": "index.js",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "clean": "rimraf lib",
+    "lint": "standard \"src/**/*.js\"",
+    "test": "npm run lint && jest",
+    "build": "npm run clean && npm run test && tsc",
+    "prepublish": "npm run build"
   },
   "keywords": [
     "egnyte",
@@ -14,9 +19,6 @@
   ],
   "author": "Josh Stout <joshstout@gmail.com>",
   "license": "MIT",
-  "dependencies": {
-    "isomorphic-fetch": "^2.2.1"
-  },
   "engines": {
     "node": ">=7.10.1"
   },
@@ -24,14 +26,20 @@
     "type": "git",
     "url": "https://github.com/zenion/egnyte-resellers-node"
   },
+  "dependencies": {
+    "node-fetch": "^2.1.2"
+  },
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-core": "^6.26.3",
-    "babel-env": "^2.4.1",
-    "babel-jest": "^23.0.1",
-    "babel-plugin-rewire": "^1.1.0",
-    "babel-template": "^6.26.0",
-    "babel-types": "^6.26.0",
-    "jest": "^23.1.0"
+    "@types/jest": "^23.1.1",
+    "@types/node": "^10.3.4",
+    "@types/node-fetch": "^2.1.1",
+    "cross-env": "^5.2.0",
+    "jest": "^23.1.0",
+    "jest-fetch-mock": "^1.6.4",
+    "rimraf": "^2.6.2",
+    "ts-jest": "^22.4.6",
+    "tslint": "^5.10.0",
+    "tslint-config-standard": "^7.0.0",
+    "typescript": "^2.9.2"
   }
 }

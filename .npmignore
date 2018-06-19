@@ -1,6 +1,6 @@
 .idea
 .vscode
-lib
+src
 
 # Logs
 logs
