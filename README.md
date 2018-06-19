@@ -6,6 +6,17 @@ All methods are implemented in async/await so use you must use async/await or pr
 
 I made this to solve my own problems of automating modifications to a resellers account for egnyte. Use at your own risk.
 
+Install with npm or yarn into your project:
+
+```sh
+npm install egnyte-resellers
+```
+
+```sh
+yarn add egnyte-resellers
+```
+
+---
 Basic usage:
 
 ```js
