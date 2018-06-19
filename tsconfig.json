@@ -11,9 +11,10 @@
     "strict": true,
     "esModuleInterop": true
   },
+  "include": [
+    "src/**/*.ts"
+  ],
   "exclude": [
-    "node_modules",
-    "lib",
     "src/**/*.test.ts"
   ]
 }

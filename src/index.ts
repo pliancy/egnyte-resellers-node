@@ -1,5 +1,5 @@
 import qs from 'querystring'
-import fetch from 'node-fetch'
+import got from 'got'
 
 interface IEgnyteCustomer {
   customerEgnyteId: string,
@@ -21,7 +21,9 @@ interface IEgnyteConfig {
   /** the egnyte resellers portal username */
   username: string,
   /** the egnyte resellers portal password */
-  password: string
+  password: string,
+  resellerId?: string,
+  planId?: string
 }
 
 interface IEgnyteRawPowerUserAndStorage {
@@ -29,6 +31,11 @@ interface IEgnyteRawPowerUserAndStorage {
   Unused: number,
   Available: number,
   Domain: string
+}
+
+const gotConfigBase = {
+  timeout: 15000,
+  followRedirect: false
 }
 
 class Egnyte {
@@ -42,7 +49,9 @@ class Egnyte {
     if (!config.username || !config.password) throw new Error('missing config values username or password when calling the Egnyte constructor')
     this._config = {
       username: config.username,
-      password: config.password
+      password: config.password,
+      resellerId: config.resellerId || '',
+      planId: config.planId || ''
     }
   }
 
@@ -52,9 +61,8 @@ class Egnyte {
    */
   async _getCsrfToken (): Promise<string> {
     try {
-      const query = await fetch('https://resellers.egnyte.com/accounts/login/?next=/customer/browse/')
-      const html = await query.text()
-      const csrfRegexp = html.match(/id='csrfmiddlewaretoken'.*value='([a-zA-Z0-9]+)'.*\n/)
+      const query = await got('https://resellers.egnyte.com/accounts/login/?next=/customer/browse/', { ...gotConfigBase })
+      const csrfRegexp = query.body.match(/id='csrfmiddlewaretoken'.*value='([a-zA-Z0-9]+)'.*\n/)
       if (!csrfRegexp) throw new Error('unable to find token in page')
       return csrfRegexp[1]
     } catch (err) {
@@ -70,9 +78,12 @@ class Egnyte {
   async _getResellerId (authCookie: string): Promise<string> {
     try {
       if (!authCookie) throw new Error('missing authCookie')
-      const query = await fetch('https://resellers.egnyte.com/customer/browse/', { headers: { 'cookie': authCookie }, redirect: 'manual' })
-      if (query.status === 302) {
-        let location = query.headers.get('location')
+      const query = await got('https://resellers.egnyte.com/customer/browse/', {
+        ...gotConfigBase,
+        headers: { 'cookie': authCookie }
+      })
+      if (query.statusCode === 302) {
+        let location = query.headers.location
         if (!location) throw new Error('unable to find location header in response')
         return location.split('/')[5]
       } else {
@@ -92,9 +103,12 @@ class Egnyte {
     try {
       if (!authCookie) throw new Error('missing authCookie')
       let resellerId = await this._getResellerId(authCookie)
-      const query = await fetch(`https://resellers.egnyte.com/msp/customer_data/${resellerId}`, { headers: { 'cookie': authCookie } })
-      let result = await query.json()
-      return result[0].plan_id
+      const query = await got(`https://resellers.egnyte.com/msp/customer_data/${resellerId}`, {
+        ...gotConfigBase,
+        headers: { 'cookie': authCookie },
+        json: true
+      })
+      return query.body[0].plan_id.toString()
     } catch (err) {
       throw err
     }
@@ -108,17 +122,26 @@ class Egnyte {
    */
   async _authenticate (username: string, password: string): Promise<string> {
     try {
-      let csrfToken = await this._getCsrfToken()
       if (!username || !password) throw new Error('Missing username or password. Unable to authenticate.')
-      let auth = await fetch('https://resellers.egnyte.com/accounts/login/?next=/customer/browse/', {
+      let csrfToken = await this._getCsrfToken()
+      let auth = await got('https://resellers.egnyte.com/accounts/login/?next=/customer/browse/', {
+        ...gotConfigBase,
         method: 'post',
-        body: `csrfmiddlewaretoken=${csrfToken}&username=${qs.escape(username)}&password=${qs.escape(password)}&this_is_the_login_form=1`,
-        redirect: 'manual'
+        body: `csrfmiddlewaretoken=${csrfToken}&username=${qs.escape(username)}&password=${qs.escape(password)}&this_is_the_login_form=1`
       })
-      if (auth.status === 302) {
-        let setCookieHeader = auth.headers.get('set-cookie')
+      if (auth.statusCode === 302) {
+        let setCookieHeader = auth.headers['set-cookie']
         if (!setCookieHeader) throw new Error('unable to find set-cookie header in response')
-        return setCookieHeader.split(';')[0]
+        let authCookie = setCookieHeader[0].split(';')[0]
+        if (!this._config.resellerId || !this._config.planId) {
+          let [resellerId, planId] = await Promise.all([
+            this._getResellerId(authCookie),
+            this._getPlanId(authCookie)
+          ])
+          this._config.resellerId = resellerId
+          this._config.planId = planId
+        }
+        return authCookie
       } else {
         throw new Error('Authentication failed. Bad username or password.')
       }
@@ -135,10 +158,12 @@ class Egnyte {
   async _getAllPowerUsers (authCookie: string): Promise<IEgnyteRawPowerUserAndStorage[]> {
     try {
       if (!authCookie) throw new Error('missing authCookie')
-      let resellerId = await this._getResellerId(authCookie)
-      let planId = await this._getPlanId(authCookie)
-      let response = await fetch(`https://resellers.egnyte.com/msp/power_users/${resellerId}/${planId}/`, { headers: { 'cookie': authCookie } })
-      return await response.json()
+      let response = await got(`https://resellers.egnyte.com/msp/power_users/${this._config.resellerId}/${this._config.planId}/`, {
+        ...gotConfigBase,
+        headers: { 'cookie': authCookie },
+        json: true
+      })
+      return await response.body
     } catch (err) {
       throw err
     }
@@ -152,10 +177,12 @@ class Egnyte {
   async _getAllStorage (authCookie: string): Promise<IEgnyteRawPowerUserAndStorage[]> {
     try {
       if (!authCookie) throw new Error('missing authCookie')
-      let resellerId = await this._getResellerId(authCookie)
-      let planId = await this._getPlanId(authCookie)
-      let response = await fetch(`https://resellers.egnyte.com/msp/storage/${resellerId}/${planId}/`, { headers: { 'cookie': authCookie } })
-      return await response.json()
+      let response = await got(`https://resellers.egnyte.com/msp/storage/${this._config.resellerId}/${this._config.planId}/`, {
+        ...gotConfigBase,
+        headers: { 'cookie': authCookie },
+        json: true
+      })
+      return await response.body
     } catch (err) {
       throw err
     }
@@ -256,9 +283,9 @@ class Egnyte {
         return response
       }
       let authCookie = await this._authenticate(this._config.username, this._config.password)
-      let resellerId = await this._getResellerId(authCookie)
-      let response = await fetch(`https://resellers.egnyte.com/msp/change_power_users/${resellerId}/`, {
-        method: 'POST',
+      let response = await got(`https://resellers.egnyte.com/msp/change_power_users/${this._config.resellerId}/`, {
+        ...gotConfigBase,
+        method: 'post',
         headers: {
           'Cookie': authCookie,
           'Content-Type': 'application/json',
@@ -269,7 +296,7 @@ class Egnyte {
           power_users: numOfUsers.toString()
         })
       })
-      let result = await response.json()
+      let result = JSON.parse(response.body)
       if (result.msg === 'Plan updated successfully!') {
         let response: IEgnyteUpdateResponse = {
           result: 'SUCCESS',
@@ -308,9 +335,9 @@ class Egnyte {
         return response
       }
       let authCookie = await this._authenticate(this._config.username, this._config.password)
-      let resellerId = await this._getResellerId(authCookie)
-      let response = await fetch(`https://resellers.egnyte.com/msp/change_storage/${resellerId}/`, {
-        method: 'POST',
+      let response = await got(`https://resellers.egnyte.com/msp/change_storage/${this._config.resellerId}/`, {
+        ...gotConfigBase,
+        method: 'post',
         headers: {
           'Cookie': authCookie,
           'Content-Type': 'application/json',
@@ -321,7 +348,7 @@ class Egnyte {
           storage: storageSizeGb.toString()
         })
       })
-      let result = await response.json()
+      let result = JSON.parse(response.body)
       if (result.msg === 'Plan updated successfully!') {
         let response: IEgnyteUpdateResponse = {
           result: 'SUCCESS',
