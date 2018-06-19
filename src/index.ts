@@ -240,7 +240,6 @@ class Egnyte {
    */
   async updateCustomerPowerUsers (customerId: string, numOfUsers: number): Promise<IEgnyteUpdateResponse> {
     try {
-      if (customerId === undefined || numOfUsers === undefined) throw new Error('missing customerId or numOfUsers')
       customerId = customerId.toLowerCase()
       let customer = await this.getOneCustomer(customerId)
       if (numOfUsers < customer.powerUsers.used) {
@@ -293,7 +292,6 @@ class Egnyte {
    */
   async updateCustomerStorage (customerId: string, storageSizeGb: number): Promise<IEgnyteUpdateResponse> {
     try {
-      if (customerId === undefined || storageSizeGb === undefined) throw new Error('missing customerId or storageSizeGb')
       customerId = customerId.toLowerCase()
       let customer = await this.getOneCustomer(customerId)
       if (storageSizeGb < customer.storageGB.used) {

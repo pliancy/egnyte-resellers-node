@@ -7,7 +7,7 @@
   "types": "./lib/index.d.ts",
   "scripts": {
     "clean": "rimraf lib",
-    "lint": "standard \"src/**/*.js\"",
+    "lint": "tslint --project '.'",
     "test": "npm run lint && jest",
     "build": "npm run clean && npm run test && tsc",
     "prepublish": "npm run build"
