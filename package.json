@@ -10,7 +10,14 @@
     "lint": "tslint --project '.'",
     "test": "npm run lint && jest",
     "build": "npm run clean && npm run test && tsc",
-    "prepublish": "npm run build"
+    "prepublish": "npm run build",
+    "precommit": "lint-staged"
+  },
+  "lint-staged": {
+    "{src,test}/**/*.ts": [
+      "tslint --fix",
+      "git add"
+    ]
   },
   "keywords": [
     "egnyte",
@@ -19,9 +26,6 @@
   ],
   "author": "Josh Stout <joshstout@gmail.com>",
   "license": "MIT",
-  "engines": {
-    "node": ">=7.10.1"
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/zenion/egnyte-resellers-node"
@@ -33,8 +37,9 @@
     "@types/got": "^8.3.1",
     "@types/jest": "^23.1.1",
     "@types/node": "^10.3.4",
-    "cross-env": "^5.2.0",
+    "husky": "^0.14.3",
     "jest": "^23.1.0",
+    "lint-staged": "^7.2.0",
     "rimraf": "^2.6.2",
     "ts-jest": "^22.4.6",
     "tslint": "^5.10.0",
