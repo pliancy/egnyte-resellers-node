@@ -1,6 +1,7 @@
 .idea
 .vscode
 
+docs
 src
 jest.config.js
 tsconfig.json

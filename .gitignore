@@ -1,6 +1,7 @@
 .idea
 .vscode
 lib
+docs
 
 # Logs
 logs
