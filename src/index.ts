@@ -2,50 +2,59 @@ import qs from 'querystring'
 import got from 'got'
 
 interface IEgnyteCustomer {
-  customerEgnyteId: string,
-  powerUsers: { total: number, used: number, free: number },
+  customerEgnyteId: string
+  powerUsers: { total: number, used: number, free: number }
   storageGB: { total: number, used: number, free: number }
 }
 
 interface IEgnyteLicensingResponse {
-  powerUsersAvailable: number,
+  powerUsersAvailable: number
   storageGBAvailable: number
 }
 
 interface IEgnyteUpdateResponse {
-  result: string,
+  result: string
   message: string
+}
+
+interface IEgnyteConstructorConfig {
+  username: string
+  password: string
+  timeoutMs?: number
+  resellerId?: string
+  planId?: string
 }
 
 interface IEgnyteConfig {
   /** the egnyte resellers portal username */
-  username: string,
+  username: string
   /** the egnyte resellers portal password */
-  password: string,
-  resellerId?: string,
+  password: string
+  resellerId?: string
   planId?: string
 }
 
-interface IEgnyteRawPowerUserAndStorage {
-  Used: number,
-  Unused: number,
-  Available: number,
-  Domain: string
+interface IGotConfigBase {
+  timeout: number
+  followRedirect: boolean
 }
 
-const gotConfigBase = {
-  timeout: 15000,
-  followRedirect: false
+interface IEgnyteRawPowerUserAndStorage {
+  Used: number
+  Unused: number
+  Available: number
+  Domain: string
 }
 
 class Egnyte {
   _config: IEgnyteConfig
+  _gotConfigBase: IGotConfigBase
   /**
    * Creates an instance of Egnyte.
    * @param config the config object
    * @memberof Egnyte
    */
-  constructor (config: IEgnyteConfig) {
+  constructor (config: IEgnyteConstructorConfig) {
     if (!config.username || !config.password) throw new Error('missing config values username or password when calling the Egnyte constructor')
     this._config = {
       username: config.username,
@@ -53,6 +62,15 @@ class Egnyte {
       resellerId: config.resellerId || '',
       planId: config.planId || ''
     }
+    this._gotConfigBase = {
+      timeout: config.timeoutMs || 20000,
+      followRedirect: false
+    }
+  }
+
+  async _getCurrentConfig (): Promise<object> {
+    if (!this._config.resellerId || !this._config.planId) await this._authenticate(this._config.username, this._config.password)
+    return this._config
   }
 
   /**
@@ -61,7 +79,7 @@ class Egnyte {
    */
   async _getCsrfToken (): Promise<string> {
     try {
-      const query = await got('https://resellers.egnyte.com/accounts/login/?next=/customer/browse/', { ...gotConfigBase })
+      const query = await got('https://resellers.egnyte.com/accounts/login/?next=/customer/browse/', { ...this._gotConfigBase })
       const csrfRegexp = query.body.match(/id='csrfmiddlewaretoken'.*value='([a-zA-Z0-9]+)'.*\n/)
       if (!csrfRegexp) throw new Error('unable to find token in page')
       return csrfRegexp[1]
@@ -79,7 +97,7 @@ class Egnyte {
     try {
       if (!authCookie) throw new Error('missing authCookie')
       const query = await got('https://resellers.egnyte.com/customer/browse/', {
-        ...gotConfigBase,
+        ...this._gotConfigBase,
         headers: { 'cookie': authCookie }
       })
       if (query.statusCode === 302) {
@@ -104,7 +122,7 @@ class Egnyte {
       if (!authCookie) throw new Error('missing authCookie')
       let resellerId = await this._getResellerId(authCookie)
       const query = await got(`https://resellers.egnyte.com/msp/customer_data/${resellerId}`, {
-        ...gotConfigBase,
+        ...this._gotConfigBase,
         headers: { 'cookie': authCookie },
         json: true
       })
@@ -125,7 +143,7 @@ class Egnyte {
       if (!username || !password) throw new Error('Missing username or password. Unable to authenticate.')
       let csrfToken = await this._getCsrfToken()
       let auth = await got('https://resellers.egnyte.com/accounts/login/?next=/customer/browse/', {
-        ...gotConfigBase,
+        ...this._gotConfigBase,
         method: 'post',
         body: `csrfmiddlewaretoken=${csrfToken}&username=${qs.escape(username)}&password=${qs.escape(password)}&this_is_the_login_form=1`
       })
@@ -159,7 +177,7 @@ class Egnyte {
     try {
       if (!authCookie) throw new Error('missing authCookie')
       let response = await got(`https://resellers.egnyte.com/msp/power_users/${this._config.resellerId}/${this._config.planId}/`, {
-        ...gotConfigBase,
+        ...this._gotConfigBase,
         headers: { 'cookie': authCookie },
         json: true
       })
@@ -178,7 +196,7 @@ class Egnyte {
     try {
       if (!authCookie) throw new Error('missing authCookie')
       let response = await got(`https://resellers.egnyte.com/msp/storage/${this._config.resellerId}/${this._config.planId}/`, {
-        ...gotConfigBase,
+        ...this._gotConfigBase,
         headers: { 'cookie': authCookie },
         json: true
       })
@@ -284,7 +302,7 @@ class Egnyte {
       }
       let authCookie = await this._authenticate(this._config.username, this._config.password)
       let response = await got(`https://resellers.egnyte.com/msp/change_power_users/${this._config.resellerId}/`, {
-        ...gotConfigBase,
+        ...this._gotConfigBase,
         method: 'post',
         headers: {
           'Cookie': authCookie,
@@ -336,7 +354,7 @@ class Egnyte {
       }
       let authCookie = await this._authenticate(this._config.username, this._config.password)
       let response = await got(`https://resellers.egnyte.com/msp/change_storage/${this._config.resellerId}/`, {
-        ...gotConfigBase,
+        ...this._gotConfigBase,
         method: 'post',
         headers: {
           'Cookie': authCookie,
