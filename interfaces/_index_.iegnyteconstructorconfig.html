@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>IEgnyteUpdateResponse | egnyte-resellers</title>
+	<title>IEgnyteConstructorConfig | egnyte-resellers</title>
 	<meta name="description" content="">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -59,10 +59,10 @@
 					<a href="../modules/_index_.html">&quot;index&quot;</a>
 				</li>
 				<li>
-					<a href="_index_.iegnyteupdateresponse.html">IEgnyteUpdateResponse</a>
+					<a href="_index_.iegnyteconstructorconfig.html">IEgnyteConstructorConfig</a>
 				</li>
 			</ul>
-			<h1>Interface IEgnyteUpdateResponse</h1>
+			<h1>Interface IEgnyteConstructorConfig</h1>
 		</div>
 	</div>
 </header>
@@ -73,7 +73,7 @@
 				<h3>Hierarchy</h3>
 				<ul class="tsd-hierarchy">
 					<li>
-						<span class="target">IEgnyteUpdateResponse</span>
+						<span class="target">IEgnyteConstructorConfig</span>
 					</li>
 				</ul>
 			</section>
@@ -84,8 +84,11 @@
 						<section class="tsd-index-section tsd-is-not-exported">
 							<h3>Properties</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-not-exported"><a href="_index_.iegnyteupdateresponse.html#message" class="tsd-kind-icon">message</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-not-exported"><a href="_index_.iegnyteupdateresponse.html#result" class="tsd-kind-icon">result</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-not-exported"><a href="_index_.iegnyteconstructorconfig.html#password" class="tsd-kind-icon">password</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-not-exported"><a href="_index_.iegnyteconstructorconfig.html#planid" class="tsd-kind-icon">plan<wbr>Id</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-not-exported"><a href="_index_.iegnyteconstructorconfig.html#resellerid" class="tsd-kind-icon">reseller<wbr>Id</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-not-exported"><a href="_index_.iegnyteconstructorconfig.html#timeoutms" class="tsd-kind-icon">timeout<wbr>Ms</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-not-exported"><a href="_index_.iegnyteconstructorconfig.html#username" class="tsd-kind-icon">username</a></li>
 							</ul>
 						</section>
 					</div>
@@ -94,22 +97,52 @@
 			<section class="tsd-panel-group tsd-member-group tsd-is-not-exported">
 				<h2>Properties</h2>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-not-exported">
-					<a name="message" class="tsd-anchor"></a>
-					<h3>message</h3>
-					<div class="tsd-signature tsd-kind-icon">message<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
+					<a name="password" class="tsd-anchor"></a>
+					<h3>password</h3>
+					<div class="tsd-signature tsd-kind-icon">password<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/zenion/egnyte-resellers-node/blob/24f93b0/src/index.ts#L17">index.ts:17</a></li>
+							<li>Defined in <a href="https://github.com/zenion/egnyte-resellers-node/blob/24f93b0/src/index.ts#L22">index.ts:22</a></li>
 						</ul>
 					</aside>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-not-exported">
-					<a name="result" class="tsd-anchor"></a>
-					<h3>result</h3>
-					<div class="tsd-signature tsd-kind-icon">result<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
+					<a name="planid" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> plan<wbr>Id</h3>
+					<div class="tsd-signature tsd-kind-icon">plan<wbr>Id<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/zenion/egnyte-resellers-node/blob/24f93b0/src/index.ts#L16">index.ts:16</a></li>
+							<li>Defined in <a href="https://github.com/zenion/egnyte-resellers-node/blob/24f93b0/src/index.ts#L25">index.ts:25</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-not-exported">
+					<a name="resellerid" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> reseller<wbr>Id</h3>
+					<div class="tsd-signature tsd-kind-icon">reseller<wbr>Id<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/zenion/egnyte-resellers-node/blob/24f93b0/src/index.ts#L24">index.ts:24</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-not-exported">
+					<a name="timeoutms" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> timeout<wbr>Ms</h3>
+					<div class="tsd-signature tsd-kind-icon">timeout<wbr>Ms<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/zenion/egnyte-resellers-node/blob/24f93b0/src/index.ts#L23">index.ts:23</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-not-exported">
+					<a name="username" class="tsd-anchor"></a>
+					<h3>username</h3>
+					<div class="tsd-signature tsd-kind-icon">username<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/zenion/egnyte-resellers-node/blob/24f93b0/src/index.ts#L21">index.ts:21</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -134,9 +167,30 @@
 					<li class=" tsd-kind-interface tsd-parent-kind-external-module tsd-is-not-exported">
 						<a href="_index_.iegnyteconfig.html" class="tsd-kind-icon">IEgnyte<wbr>Config</a>
 					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module tsd-is-not-exported">
+				</ul>
+				<ul class="current">
+					<li class="current tsd-kind-interface tsd-parent-kind-external-module tsd-is-not-exported">
 						<a href="_index_.iegnyteconstructorconfig.html" class="tsd-kind-icon">IEgnyte<wbr>Constructor<wbr>Config</a>
+						<ul>
+							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-not-exported">
+								<a href="_index_.iegnyteconstructorconfig.html#password" class="tsd-kind-icon">password</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-not-exported">
+								<a href="_index_.iegnyteconstructorconfig.html#planid" class="tsd-kind-icon">plan<wbr>Id</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-not-exported">
+								<a href="_index_.iegnyteconstructorconfig.html#resellerid" class="tsd-kind-icon">reseller<wbr>Id</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-not-exported">
+								<a href="_index_.iegnyteconstructorconfig.html#timeoutms" class="tsd-kind-icon">timeout<wbr>Ms</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-not-exported">
+								<a href="_index_.iegnyteconstructorconfig.html#username" class="tsd-kind-icon">username</a>
+							</li>
+						</ul>
 					</li>
+				</ul>
+				<ul class="after-current">
 					<li class=" tsd-kind-interface tsd-parent-kind-external-module tsd-is-not-exported">
 						<a href="_index_.iegnytecustomer.html" class="tsd-kind-icon">IEgnyte<wbr>Customer</a>
 					</li>
@@ -146,21 +200,9 @@
 					<li class=" tsd-kind-interface tsd-parent-kind-external-module tsd-is-not-exported">
 						<a href="_index_.iegnyterawpoweruserandstorage.html" class="tsd-kind-icon">IEgnyte<wbr>Raw<wbr>Power<wbr>User<wbr>And<wbr>Storage</a>
 					</li>
-				</ul>
-				<ul class="current">
-					<li class="current tsd-kind-interface tsd-parent-kind-external-module tsd-is-not-exported">
+					<li class=" tsd-kind-interface tsd-parent-kind-external-module tsd-is-not-exported">
 						<a href="_index_.iegnyteupdateresponse.html" class="tsd-kind-icon">IEgnyte<wbr>Update<wbr>Response</a>
-						<ul>
-							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-not-exported">
-								<a href="_index_.iegnyteupdateresponse.html#message" class="tsd-kind-icon">message</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-not-exported">
-								<a href="_index_.iegnyteupdateresponse.html#result" class="tsd-kind-icon">result</a>
-							</li>
-						</ul>
 					</li>
-				</ul>
-				<ul class="after-current">
 					<li class=" tsd-kind-interface tsd-parent-kind-external-module tsd-is-not-exported">
 						<a href="_index_.igotconfigbase.html" class="tsd-kind-icon">IGot<wbr>Config<wbr>Base</a>
 					</li>
