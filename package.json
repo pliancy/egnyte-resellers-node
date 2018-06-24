@@ -9,7 +9,7 @@
     "clean": "rimraf ./lib ./docs",
     "lint": "tslint --project '.'",
     "test": "npm run lint && jest",
-    "docs": "rimraf ./docs && typedoc src/ --out docs --mode modules --module commonjs --target es6 --excludePrivate && touch ./docs/.nojekyll && gh-pages -d docs -t",
+    "docs": "rimraf ./docs && typedoc src/index.ts --entrypoint \"index\" --out docs --mode modules --module commonjs --target es6 --excludePrivate && touch ./docs/.nojekyll && gh-pages -d docs -t",
     "build": "npm run clean && npm run test && tsc",
     "prepublish": "npm run build",
     "precommit": "lint-staged"
