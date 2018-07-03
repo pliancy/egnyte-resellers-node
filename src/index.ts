@@ -23,6 +23,7 @@ interface IEgnyteConstructorConfig {
   timeoutMs?: number
   resellerId?: string
   planId?: string
+  forceLicenseChange?: boolean
 }
 
 interface IEgnyteConfig {
