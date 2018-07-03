@@ -287,9 +287,10 @@ class Egnyte {
    * @returns response object
    */
   async updateCustomerPowerUsers (customerId: string, numOfUsers: number): Promise<IEgnyteUpdateResponse> {
+    customerId = customerId.toLowerCase()
+    let customer: any
     try {
-      customerId = customerId.toLowerCase()
-      let customer = await this.getOneCustomer(customerId)
+      customer = await this.getOneCustomer(customerId)
       if (numOfUsers < customer.powerUsers.used && this._config.forceLicenseChange !== true) {
         let response: IEgnyteUpdateResponse = {
           result: 'NO_CHANGE',
@@ -328,6 +329,18 @@ class Egnyte {
         throw new Error(result)
       }
     } catch (err) {
+      // catch the case where we set user below current in use but have allowed it via config.forceLicenseChange flag
+      if (
+        this._config.forceLicenseChange &&
+        err.statusCode === 400 &&
+        JSON.parse(err.response.body).msg === 'CFS plan upgrade failed. Please contact support.'
+      ) {
+        let response: IEgnyteUpdateResponse = {
+          result: 'SUCCESS',
+          message: `Updated customerId ${customerId} from ${customer.powerUsers.total} to ${numOfUsers} power users successfully.`
+        }
+        return response
+      }
       throw err
     }
   }

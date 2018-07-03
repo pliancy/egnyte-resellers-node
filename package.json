@@ -1,13 +1,13 @@
 {
   "name": "egnyte-resellers",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Library for managing things against the undocumented egnyte resellers API.",
   "homepage": "https://github.com/zenion/egnyte-resellers-node",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "scripts": {
     "clean": "rimraf ./lib ./docs",
-    "lint": "tslint --project '.'",
+    "lint": "tslint --project .",
     "test": "npm run lint && jest",
     "docs": "rimraf ./docs && typedoc src/index.ts --entrypoint \"index\" --out docs --mode modules --module commonjs --target es6 --excludePrivate && touch ./docs/.nojekyll && gh-pages -d docs -t",
     "build": "npm run clean && npm run test && tsc",
