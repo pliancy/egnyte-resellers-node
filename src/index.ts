@@ -23,6 +23,7 @@ interface IEgnyteConstructorConfig {
   timeoutMs?: number
   resellerId?: string
   planId?: string
+  forceLicenseChange?: boolean
 }
 
 interface IEgnyteConfig {
@@ -32,6 +33,7 @@ interface IEgnyteConfig {
   password: string
   resellerId?: string
   planId?: string
+  forceLicenseChange?: boolean
 }
 
 interface IGotConfigBase {
@@ -60,7 +62,8 @@ class Egnyte {
       username: config.username,
       password: config.password,
       resellerId: config.resellerId || '',
-      planId: config.planId || ''
+      planId: config.planId || '',
+      forceLicenseChange: config.forceLicenseChange || false
     }
     this._gotConfigBase = {
       timeout: config.timeoutMs || 20000,
@@ -287,7 +290,7 @@ class Egnyte {
     try {
       customerId = customerId.toLowerCase()
       let customer = await this.getOneCustomer(customerId)
-      if (numOfUsers < customer.powerUsers.used) {
+      if (numOfUsers < customer.powerUsers.used && this._config.forceLicenseChange !== true) {
         let response: IEgnyteUpdateResponse = {
           result: 'NO_CHANGE',
           message: `customerId ${customerId} currently has ${customer.powerUsers.used} power users in use. Refusing to set to ${numOfUsers} power users.`
