@@ -62,7 +62,8 @@ class Egnyte {
       username: config.username,
       password: config.password,
       resellerId: config.resellerId || '',
-      planId: config.planId || ''
+      planId: config.planId || '',
+      forceLicenseChange: config.forceLicenseChange || false
     }
     this._gotConfigBase = {
       timeout: config.timeoutMs || 20000,
