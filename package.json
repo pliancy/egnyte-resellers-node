@@ -1,6 +1,6 @@
 {
   "name": "egnyte-resellers",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "description": "Library for managing things against the undocumented egnyte resellers API.",
   "homepage": "https://github.com/zenion/egnyte-resellers-node",
   "main": "./lib/index.js",
@@ -32,21 +32,21 @@
     "url": "https://github.com/zenion/egnyte-resellers-node"
   },
   "dependencies": {
-    "got": "^8.3.1"
+    "got": "^8.3.2"
   },
   "devDependencies": {
-    "@types/got": "^8.3.1",
-    "@types/jest": "^23.1.1",
-    "@types/node": "^10.3.4",
+    "@types/got": "^8.3.5",
+    "@types/jest": "^23.3.12",
+    "@types/node": "^10.12.18",
     "gh-pages": "^1.2.0",
     "husky": "^0.14.3",
-    "jest": "^23.1.0",
-    "lint-staged": "^7.2.0",
-    "rimraf": "^2.6.2",
+    "jest": "^23.6.0",
+    "lint-staged": "^7.3.0",
+    "rimraf": "^2.6.3",
     "ts-jest": "^22.4.6",
-    "ts-node": "^6.1.2",
-    "tslint": "^5.10.0",
-    "tslint-config-standard": "^7.0.0",
+    "ts-node": "^6.2.0",
+    "tslint": "^5.12.1",
+    "tslint-config-standard": "^7.1.0",
     "typedoc": "^0.11.1",
     "typescript": "^2.9.2"
   }
