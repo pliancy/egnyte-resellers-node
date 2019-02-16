@@ -340,6 +340,15 @@ class Egnyte {
           message: `Updated customerId ${customerId} from ${customer.powerUsers.total} to ${numOfUsers} power users successfully.`
         }
         return response
+      } else if (
+        err.statusCode === 400 &&
+        JSON.parse(err.response.body).msg === 'Power Users out of range.'
+      ) {
+        let response: IEgnyteUpdateResponse = {
+          result: 'ERROR',
+          message: `No more Power User licenses available to assign.`
+        }
+        return response
       }
       throw err
     }
