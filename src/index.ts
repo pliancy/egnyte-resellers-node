@@ -344,11 +344,7 @@ class Egnyte {
         err.statusCode === 400 &&
         JSON.parse(err.response.body).msg === 'Power Users out of range.'
       ) {
-        let response: IEgnyteUpdateResponse = {
-          result: 'ERROR',
-          message: `No more Power Users licenses available. Please request more through Pliancy Engineering.`
-        }
-        return response]
+        throw new Error(`No more Power Users licenses available. Please request more through Pliancy Engineering.`)
       }
       throw err
     }
