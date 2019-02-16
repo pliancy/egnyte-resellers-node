@@ -346,9 +346,9 @@ class Egnyte {
       ) {
         let response: IEgnyteUpdateResponse = {
           result: 'ERROR',
-          message: `No more Power User licenses available to assign.`
+          message: `No more Power Users licenses available. Please request more through Pliancy Engineering.`
         }
-        return response
+        return response]
       }
       throw err
     }
