@@ -22,7 +22,6 @@ interface IEgnyteConstructorConfig {
   password: string
   timeoutMs?: number
   resellerId?: string
-  planId?: string
   forceLicenseChange?: boolean
 }
 
@@ -32,7 +31,6 @@ interface IEgnyteConfig {
   /** the egnyte resellers portal password */
   password: string
   resellerId?: string
-  planId?: string
   forceLicenseChange?: boolean
 }
 
@@ -62,18 +60,12 @@ class Egnyte {
       username: config.username,
       password: config.password,
       resellerId: config.resellerId || '',
-      planId: config.planId || '',
       forceLicenseChange: config.forceLicenseChange || false
     }
     this._gotConfigBase = {
       timeout: config.timeoutMs || 20000,
       followRedirect: false
     }
-  }
-
-  async _getCurrentConfig (): Promise<object> {
-    if (!this._config.resellerId || !this._config.planId) await this._authenticate(this._config.username, this._config.password)
-    return this._config
   }
 
   /**
@@ -116,11 +108,12 @@ class Egnyte {
   }
 
   /**
-   * Gets the planId for the logged in reseller by parsing out of the customer_data API call
+   * Gets the planId for a given customer
    * @param authCookie authCookie from _authenticate() call
+   * @param customerId customerId to lookup planId for
    * @returns planId in string form
    */
-  async _getPlanId (authCookie: string): Promise<string> {
+  async _getCustomerPlanId (authCookie: string, customerId: string): Promise<string> {
     try {
       if (!authCookie) throw new Error('missing authCookie')
       let resellerId = await this._getResellerId(authCookie)
@@ -129,7 +122,31 @@ class Egnyte {
         headers: { 'cookie': authCookie },
         json: true
       })
-      return query.body[0].plan_id.toString()
+      let result = query.body.find((e: any) => e.domain === customerId)
+      if (!result) throw new Error(`unable to find egnyte customer: ${customerId} when querying for planId`)
+      return result.plan_id.toString()
+    } catch (err) {
+      throw err
+    }
+  }
+
+  /**
+   * gets all unique planIds
+   * @param authCookie authCookie from _authenticate() call
+   * @returns array of planIds
+   */
+  async _getAllPlanIds (authCookie: string): Promise<string[]> {
+    try {
+      if (!authCookie) throw new Error('missing authCookie')
+      let resellerId = await this._getResellerId(authCookie)
+      const query = await got(`https://resellers.egnyte.com/msp/customer_data/${resellerId}`, {
+        ...this._gotConfigBase,
+        headers: { 'cookie': authCookie },
+        json: true
+      })
+      let resultArray = query.body.map((customer: any) => customer.plan_id.toString())
+        .filter((v: any, i: any, s: any) => s.indexOf(v) === i)
+      return resultArray
     } catch (err) {
       throw err
     }
@@ -154,13 +171,9 @@ class Egnyte {
         let setCookieHeader = auth.headers['set-cookie']
         if (!setCookieHeader) throw new Error('unable to find set-cookie header in response')
         let authCookie = setCookieHeader[0].split(';')[0]
-        if (!this._config.resellerId || !this._config.planId) {
-          let [resellerId, planId] = await Promise.all([
-            this._getResellerId(authCookie),
-            this._getPlanId(authCookie)
-          ])
+        if (!this._config.resellerId) {
+          let resellerId = await this._getResellerId(authCookie)
           this._config.resellerId = resellerId
-          this._config.planId = planId
         }
         return authCookie
       } else {
@@ -179,12 +192,23 @@ class Egnyte {
   async _getAllPowerUsers (authCookie: string): Promise<IEgnyteRawPowerUserAndStorage[]> {
     try {
       if (!authCookie) throw new Error('missing authCookie')
-      let response = await got(`https://resellers.egnyte.com/msp/power_users/${this._config.resellerId}/${this._config.planId}/`, {
-        ...this._gotConfigBase,
-        headers: { 'cookie': authCookie },
-        json: true
-      })
-      return await response.body
+      let planIds = await this._getAllPlanIds(authCookie)
+      let promises = []
+
+      for (let id of planIds) {
+        promises.push(got(`https://resellers.egnyte.com/msp/power_users/${this._config.resellerId}/${id}/`, {
+          ...this._gotConfigBase,
+          headers: { 'cookie': authCookie },
+          json: true
+        }))
+      }
+
+      let results: any = await Promise.all(promises)
+
+      let finalArray: any[] = []
+      for (let arr of results) finalArray = [...finalArray, ...arr.body]
+
+      return finalArray
     } catch (err) {
       throw err
     }
@@ -198,12 +222,23 @@ class Egnyte {
   async _getAllStorage (authCookie: string): Promise<IEgnyteRawPowerUserAndStorage[]> {
     try {
       if (!authCookie) throw new Error('missing authCookie')
-      let response = await got(`https://resellers.egnyte.com/msp/storage/${this._config.resellerId}/${this._config.planId}/`, {
-        ...this._gotConfigBase,
-        headers: { 'cookie': authCookie },
-        json: true
-      })
-      return await response.body
+      let planIds = await this._getAllPlanIds(authCookie)
+      let promises = []
+
+      for (let id of planIds) {
+        promises.push(got(`https://resellers.egnyte.com/msp/storage/${this._config.resellerId}/${id}/`, {
+          ...this._gotConfigBase,
+          headers: { 'cookie': authCookie },
+          json: true
+        }))
+      }
+
+      let results: any = await Promise.all(promises)
+
+      let finalArray: any[] = []
+      for (let arr of results) finalArray = [...finalArray, ...arr.body]
+
+      return finalArray
     } catch (err) {
       throw err
     }
