@@ -17,11 +17,6 @@ interface IEgnyteCustomer {
   }
 }
 
-interface IEgnyteLicensingResponse {
-  powerUsersAvailable: number
-  storageGBAvailable: number
-}
-
 interface IEgnyteUpdateResponse {
   result: string
   message: string
