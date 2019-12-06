@@ -3,8 +3,18 @@ import got from 'got'
 
 interface IEgnyteCustomer {
   customerEgnyteId: string
-  powerUsers: { total: number, used: number, free: number }
-  storageGB: { total: number, used: number, free: number }
+  powerUsers: {
+    total: number,
+    used: number,
+    available: number,
+    free: number
+  }
+  storageGB: {
+    total: number,
+    used: number,
+    available: number,
+    free: number
+  }
 }
 
 interface IEgnyteLicensingResponse {
@@ -207,7 +217,6 @@ class Egnyte {
 
       let finalArray: any[] = []
       for (let arr of results) finalArray = [...finalArray, ...arr.body]
-
       return finalArray
     } catch (err) {
       throw err
@@ -262,11 +271,13 @@ class Egnyte {
           powerUsers: {
             total: customerPowerUserData.Used + customerPowerUserData.Unused,
             used: customerPowerUserData.Used,
+            available: customerPowerUserData.Available,
             free: customerPowerUserData.Unused
           },
           storageGB: {
             total: customerStorageData.Used + customerStorageData.Unused,
             used: customerStorageData.Used,
+            available: customerStorageData.Available,
             free: customerStorageData.Unused
           }
         }
@@ -298,18 +309,36 @@ class Egnyte {
    * retrieves available global licensing for both user and storage that isn't assigned to customers
    * @returns object containing the available user and storage data
    */
-  async getAvailableLicensing (): Promise<IEgnyteLicensingResponse> {
+  async getAvailableLicensing (): Promise<any> {
     try {
       let authCookie = await this._authenticate(this._config.username, this._config.password)
-      let [puData, sData] = await Promise.all([
-        this._getAllPowerUsers(authCookie),
-        this._getAllStorage(authCookie)
-      ])
-      let result: IEgnyteLicensingResponse = {
-        powerUsersAvailable: puData[0].Available,
-        storageGBAvailable: sData[0].Available
+      let planIds = await this._getAllPlanIds(authCookie)
+
+      let promises = []
+
+      for (let id of planIds) {
+        promises.push(got(`https://resellers.egnyte.com/msp/usage_stats/${this._config.resellerId}/${id}/`, {
+          ...this._gotConfigBase,
+          headers: { 'cookie': authCookie },
+          json: true
+        }))
       }
-      return result
+
+      let result = await Promise.all(promises)
+
+      let final = []
+
+      for (let i in result) {
+        let base = result[i].body[0]
+        let [_, data]: any = Object.entries(base)[0]
+        final.push({
+          planId: planIds[i],
+          availablePowerUsers: data.power_user_stats.Available,
+          availableStorage: data.storage_stats.Available
+        })
+      }
+
+      return final
     } catch (err) {
       throw err
     }
@@ -326,6 +355,7 @@ class Egnyte {
     let customer: any
     try {
       customer = await this.getOneCustomer(customerId)
+      if (customer.powerUsers.available <= 0) throw new Error('No available licenses on customers reseller plan.')
       if (numOfUsers < customer.powerUsers.used && this._config.forceLicenseChange !== true) {
         let response: IEgnyteUpdateResponse = {
           result: 'NO_CHANGE',
