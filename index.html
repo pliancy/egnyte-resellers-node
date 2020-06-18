@@ -4,7 +4,7 @@
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<title>egnyte-resellers</title>
-	<meta name="description" content="">
+	<meta name="description" content="Documentation for egnyte-resellers">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="assets/css/main.css">
 </head>
@@ -13,7 +13,7 @@
 	<div class="tsd-page-toolbar">
 		<div class="container">
 			<div class="table-wrap">
-				<div class="table-cell" id="tsd-search" data-index="assets/js/search.js" data-base=".">
+				<div class="table-cell" id="tsd-search" data-index="assets/js/search.json" data-base=".">
 					<div class="field">
 						<label for="tsd-search-field" class="tsd-widget search no-caption">Search</label>
 						<input id="tsd-search-field" type="text" />
@@ -56,7 +56,7 @@
 					<a href="globals.html">Globals</a>
 				</li>
 			</ul>
-			<h1> egnyte-resellers</h1>
+			<h1>egnyte-resellers</h1>
 		</div>
 	</div>
 </header>
@@ -64,24 +64,24 @@
 	<div class="row">
 		<div class="col-8 col-content">
 			<div class="tsd-panel tsd-typography">
-				<h1 id="egnyte-resellers-api">Egnyte Resellers API</h1>
+				<a href="#egnyte-resellers-api" id="egnyte-resellers-api" style="color: inherit; text-decoration: none;">
+					<h1>Egnyte Resellers API</h1>
+				</a>
 				<p>Library for managing things against the undocumented egnyte resellers API.</p>
 				<p>All methods are implemented in async/await so use you must use async/await or promises to interact with them. Below examples show promise.then().catch() syntax for clarity</p>
 				<p>I made this to solve my own problems of automating modifications to a resellers account for egnyte. Use at your own risk.</p>
 				<p>Install with npm or yarn into your project:</p>
-				<pre><code class="lang-sh">npm install egnyte-resellers
-</code></pre>
-				<pre><code class="lang-sh">yarn add egnyte-resellers
-</code></pre>
+				<pre><code class="language-sh">npm install egnyte-resellers</code></pre>
+				<pre><code class="language-sh">yarn add egnyte-resellers</code></pre>
 				<hr>
 				<p>Basic usage:</p>
-				<pre><code class="lang-js"><span class="hljs-keyword">const</span> Egnyte = <span class="hljs-built_in">require</span>(<span class="hljs-string">'egnyte-resellers'</span>)
+				<pre><code class="language-js"><span class="hljs-keyword">const</span> Egnyte = <span class="hljs-built_in">require</span>(<span class="hljs-string">&#x27;egnyte-resellers&#x27;</span>)
 
 <span class="hljs-comment">// create an instance of the Egnyte class</span>
 <span class="hljs-comment">// supply username and password used to login to egnyte resellers portal (https://resellers.egnyte.com)</span>
 <span class="hljs-keyword">const</span> egnyte = <span class="hljs-keyword">new</span> Egnyte({
-  <span class="hljs-attr">username</span>: <span class="hljs-string">'myusername@company.com'</span>,
-  <span class="hljs-attr">password</span>: <span class="hljs-string">'mydefinitelygoodpassword'</span>
+  <span class="hljs-attr">username</span>: <span class="hljs-string">&#x27;myusername@company.com&#x27;</span>,
+  <span class="hljs-attr">password</span>: <span class="hljs-string">&#x27;mydefinitelygoodpassword&#x27;</span>
 })
 
 <span class="hljs-comment">// get information about your customer tenants</span>
@@ -90,16 +90,16 @@
 <span class="hljs-comment">// [</span>
 <span class="hljs-comment">//   ...</span>
 <span class="hljs-comment">//   {</span>
-<span class="hljs-comment">//     "customerEgnyteId": "thecustomerid",</span>
-<span class="hljs-comment">//     "powerUsers": {</span>
-<span class="hljs-comment">//       "total": 5,</span>
-<span class="hljs-comment">//       "active": 1,</span>
-<span class="hljs-comment">//       "free": 4</span>
+<span class="hljs-comment">//     &quot;customerEgnyteId&quot;: &quot;thecustomerid&quot;,</span>
+<span class="hljs-comment">//     &quot;powerUsers&quot;: {</span>
+<span class="hljs-comment">//       &quot;total&quot;: 5,</span>
+<span class="hljs-comment">//       &quot;active&quot;: 1,</span>
+<span class="hljs-comment">//       &quot;free&quot;: 4</span>
 <span class="hljs-comment">//     },</span>
-<span class="hljs-comment">//     "storageGB": {</span>
-<span class="hljs-comment">//       "total": 500,</span>
-<span class="hljs-comment">//       "active": 200,</span>
-<span class="hljs-comment">//       "free": 300</span>
+<span class="hljs-comment">//     &quot;storageGB&quot;: {</span>
+<span class="hljs-comment">//       &quot;total&quot;: 500,</span>
+<span class="hljs-comment">//       &quot;active&quot;: 200,</span>
+<span class="hljs-comment">//       &quot;free&quot;: 300</span>
 <span class="hljs-comment">//     }</span>
 <span class="hljs-comment">//   }</span>
 <span class="hljs-comment">// ]</span>
@@ -113,7 +113,7 @@ egnyte.getAllCustomers()
   })
 
 <span class="hljs-comment">// get a single customer instead of an array of them</span>
-egnyte.getOneCustomer(<span class="hljs-string">'thecustomerid'</span>)
+egnyte.getOneCustomer(<span class="hljs-string">&#x27;thecustomerid&#x27;</span>)
   .then(<span class="hljs-function"><span class="hljs-params">result</span> =&gt;</span> {
     <span class="hljs-comment">// do something with result</span>
   })
@@ -137,11 +137,11 @@ egnyte.getAvailableLicensing()
     <span class="hljs-comment">// handle your errors friends!</span>
   })
 
-<span class="hljs-comment">// updates a customer's power user count</span>
-<span class="hljs-comment">// since egnyte doesn't do it for whatever genius reason, we'll do validation to ensure you can't set this to less than the current in-use number of users</span>
+<span class="hljs-comment">// updates a customer&#x27;s power user count</span>
+<span class="hljs-comment">// since egnyte doesn&#x27;t do it for whatever genius reason, we&#x27;ll do validation to ensure you can&#x27;t set this to less than the current in-use number of users</span>
 <span class="hljs-comment">//</span>
 <span class="hljs-comment">// sets thecustomerid to 20 user count</span>
-egnyte.updateCustomerPowerUsers(<span class="hljs-string">'thecustomerid'</span>, <span class="hljs-number">20</span>)
+egnyte.updateCustomerPowerUsers(<span class="hljs-string">&#x27;thecustomerid&#x27;</span>, <span class="hljs-number">20</span>)
   .then(<span class="hljs-function"><span class="hljs-params">result</span> =&gt;</span> {
     <span class="hljs-comment">// do something with result</span>
   })
@@ -149,18 +149,17 @@ egnyte.updateCustomerPowerUsers(<span class="hljs-string">'thecustomerid'</span>
     <span class="hljs-comment">// handle your errors friends!</span>
   })
 
-<span class="hljs-comment">// updates a customer's storage GB count</span>
-<span class="hljs-comment">// since egnyte doesn't do it for whatever genius reason, we'll do validation to ensure you can't set this to less than the current in-use GB of storage</span>
+<span class="hljs-comment">// updates a customer&#x27;s storage GB count</span>
+<span class="hljs-comment">// since egnyte doesn&#x27;t do it for whatever genius reason, we&#x27;ll do validation to ensure you can&#x27;t set this to less than the current in-use GB of storage</span>
 <span class="hljs-comment">//</span>
 <span class="hljs-comment">// sets thecustomerid to 500GB storage allocation</span>
-egnyte.updateCustomerStorage(<span class="hljs-string">'thecustomerid'</span>, <span class="hljs-number">500</span>)
+egnyte.updateCustomerStorage(<span class="hljs-string">&#x27;thecustomerid&#x27;</span>, <span class="hljs-number">500</span>)
   .then(<span class="hljs-function"><span class="hljs-params">result</span> =&gt;</span> {
     <span class="hljs-comment">// do something with result</span>
   })
   .catch(<span class="hljs-function"><span class="hljs-params">err</span> =&gt;</span> {
     <span class="hljs-comment">// handle your errors friends!</span>
-  })
-</code></pre>
+  })</code></pre>
 			</div>
 		</div>
 		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
@@ -169,8 +168,8 @@ egnyte.updateCustomerStorage(<span class="hljs-string">'thecustomerid'</span>, <
 					<li class="globals  ">
 						<a href="globals.html"><em>Globals</em></a>
 					</li>
-					<li class=" tsd-kind-external-module">
-						<a href="modules/_index_.html">"index"</a>
+					<li class=" tsd-kind-module">
+						<a href="modules/_index_.html">&quot;index&quot;</a>
 					</li>
 				</ul>
 			</nav>
@@ -186,62 +185,16 @@ egnyte.updateCustomerStorage(<span class="hljs-string">'thecustomerid'</span>, <
 		<h2>Legend</h2>
 		<div class="tsd-legend-group">
 			<ul class="tsd-legend">
-				<li class="tsd-kind-module"><span class="tsd-kind-icon">Module</span></li>
-				<li class="tsd-kind-object-literal"><span class="tsd-kind-icon">Object literal</span></li>
-				<li class="tsd-kind-variable"><span class="tsd-kind-icon">Variable</span></li>
-				<li class="tsd-kind-function"><span class="tsd-kind-icon">Function</span></li>
-				<li class="tsd-kind-function tsd-has-type-parameter"><span class="tsd-kind-icon">Function with type parameter</span></li>
-				<li class="tsd-kind-index-signature"><span class="tsd-kind-icon">Index signature</span></li>
-				<li class="tsd-kind-type-alias"><span class="tsd-kind-icon">Type alias</span></li>
-			</ul>
-			<ul class="tsd-legend">
-				<li class="tsd-kind-enum"><span class="tsd-kind-icon">Enumeration</span></li>
-				<li class="tsd-kind-enum-member"><span class="tsd-kind-icon">Enumeration member</span></li>
-				<li class="tsd-kind-property tsd-parent-kind-enum"><span class="tsd-kind-icon">Property</span></li>
-				<li class="tsd-kind-method tsd-parent-kind-enum"><span class="tsd-kind-icon">Method</span></li>
-			</ul>
-			<ul class="tsd-legend">
 				<li class="tsd-kind-interface"><span class="tsd-kind-icon">Interface</span></li>
-				<li class="tsd-kind-interface tsd-has-type-parameter"><span class="tsd-kind-icon">Interface with type parameter</span></li>
-				<li class="tsd-kind-constructor tsd-parent-kind-interface"><span class="tsd-kind-icon">Constructor</span></li>
-				<li class="tsd-kind-property tsd-parent-kind-interface"><span class="tsd-kind-icon">Property</span></li>
-				<li class="tsd-kind-method tsd-parent-kind-interface"><span class="tsd-kind-icon">Method</span></li>
-				<li class="tsd-kind-index-signature tsd-parent-kind-interface"><span class="tsd-kind-icon">Index signature</span></li>
 			</ul>
 			<ul class="tsd-legend">
 				<li class="tsd-kind-class"><span class="tsd-kind-icon">Class</span></li>
-				<li class="tsd-kind-class tsd-has-type-parameter"><span class="tsd-kind-icon">Class with type parameter</span></li>
-				<li class="tsd-kind-constructor tsd-parent-kind-class"><span class="tsd-kind-icon">Constructor</span></li>
-				<li class="tsd-kind-property tsd-parent-kind-class"><span class="tsd-kind-icon">Property</span></li>
-				<li class="tsd-kind-method tsd-parent-kind-class"><span class="tsd-kind-icon">Method</span></li>
-				<li class="tsd-kind-accessor tsd-parent-kind-class"><span class="tsd-kind-icon">Accessor</span></li>
-				<li class="tsd-kind-index-signature tsd-parent-kind-class"><span class="tsd-kind-icon">Index signature</span></li>
-			</ul>
-			<ul class="tsd-legend">
-				<li class="tsd-kind-constructor tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited constructor</span></li>
-				<li class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited property</span></li>
-				<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited method</span></li>
-				<li class="tsd-kind-accessor tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited accessor</span></li>
-			</ul>
-			<ul class="tsd-legend">
-				<li class="tsd-kind-property tsd-parent-kind-class tsd-is-protected"><span class="tsd-kind-icon">Protected property</span></li>
-				<li class="tsd-kind-method tsd-parent-kind-class tsd-is-protected"><span class="tsd-kind-icon">Protected method</span></li>
-				<li class="tsd-kind-accessor tsd-parent-kind-class tsd-is-protected"><span class="tsd-kind-icon">Protected accessor</span></li>
-			</ul>
-			<ul class="tsd-legend">
-				<li class="tsd-kind-property tsd-parent-kind-class tsd-is-private"><span class="tsd-kind-icon">Private property</span></li>
-				<li class="tsd-kind-method tsd-parent-kind-class tsd-is-private"><span class="tsd-kind-icon">Private method</span></li>
-				<li class="tsd-kind-accessor tsd-parent-kind-class tsd-is-private"><span class="tsd-kind-icon">Private accessor</span></li>
-			</ul>
-			<ul class="tsd-legend">
-				<li class="tsd-kind-property tsd-parent-kind-class tsd-is-static"><span class="tsd-kind-icon">Static property</span></li>
-				<li class="tsd-kind-call-signature tsd-parent-kind-class tsd-is-static"><span class="tsd-kind-icon">Static method</span></li>
 			</ul>
 		</div>
 	</div>
 </footer>
 <div class="container tsd-generator">
-	<p>Generated using <a href="http://typedoc.org/" target="_blank">TypeDoc</a></p>
+	<p>Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p>
 </div>
 <div class="overlay"></div>
 <script src="assets/js/main.js"></script>
