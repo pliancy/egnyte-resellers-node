@@ -168,10 +168,10 @@ class Egnyte {
     })))
 
     return customerStats.map((e: any) => e.body.map((f: any) => {
-      const egnyteCustomerId = Object.keys(f)[0]
-      const ref = f[egnyteCustomerId]
+      const customerEgnyteId = Object.keys(f)[0]
+      const ref = f[customerEgnyteId]
       return {
-        egnyteCustomerId,
+        customerEgnyteId,
         planId: e.requestUrl.split('/')[6],
         powerUsers: {
           total: ref.power_user_stats.Used + ref.power_user_stats.Unused,
