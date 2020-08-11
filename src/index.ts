@@ -215,6 +215,7 @@ class Egnyte {
       customer.storageGB.total = data.storageGB.total
       customer.storageGB.free = data.storageGB.total - customer.storageGB.used
     }
+    return customer
   }
 
   /**
