@@ -45,7 +45,7 @@ interface IGotConfigBase {
   followRedirect: boolean
 }
 
-interface IEgnyteRawPowerUserAndStorage {
+interface IEgnyteRawPowerUserAndStorage{
   Used: number
   Unused: number
   Available: number
@@ -167,10 +167,10 @@ class Egnyte {
       responseType: 'json'
     })))
 
-    return customerStats.map((e: any) => e.body.map((f: any) => {
+    const resp: IEgnyteCustomer[] = customerStats.map((e: any) => e.body.map((f: any) => {
       const customerEgnyteId = Object.keys(f)[0]
       const ref = f[customerEgnyteId]
-      return {
+      const obj: IEgnyteCustomer = {
         customerEgnyteId,
         planId: e.requestUrl.split('/')[6],
         powerUsers: {
@@ -179,14 +179,17 @@ class Egnyte {
           available: ref.power_user_stats.Available,
           free: ref.power_user_stats.Unused
         },
-        storageGb: {
+        storageGB: {
           total: ref.storage_stats.Used + ref.storage_stats.Unused,
           used: ref.storage_stats.Used,
           available: ref.storage_stats.Available,
           free: ref.storage_stats.Unused
         }
       }
+      return obj
     })).flat()
+
+    return resp
   }
 
   /**
