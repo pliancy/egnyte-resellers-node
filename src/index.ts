@@ -346,22 +346,22 @@ class Egnyte {
   /**
    * Updates a customer with a new storage size
    * @param customerId customer 'domain' key from getAllStorage()
-   * @param storageSizeGb how much storage the customer should have in GB
+   * @param storageSizeGB how much storage the customer should have in GB
    * @returns response object
    */
-  async updateCustomerStorage (customerId: string, storageSizeGb: number): Promise<IEgnyteUpdateResponse> {
+  async updateCustomerStorage (customerId: string, storageSizeGB: number): Promise<IEgnyteUpdateResponse> {
     customerId = customerId.toLowerCase()
     const customer = await this.getOneCustomer(customerId)
-    if (storageSizeGb < customer.storageGB.used) {
+    if (storageSizeGB < customer.storageGB.used) {
       const response: IEgnyteUpdateResponse = {
         result: 'NO_CHANGE',
-        message: `customerId ${customerId} currently has ${customer.storageGB.used}GB storage in use. Refusing to set to ${storageSizeGb}GB storage.`
+        message: `customerId ${customerId} currently has ${customer.storageGB.used}GB storage in use. Refusing to set to ${storageSizeGB}GB storage.`
       }
       return response
-    } else if (storageSizeGb === customer.storageGB.total) {
+    } else if (storageSizeGB === customer.storageGB.total) {
       const response: IEgnyteUpdateResponse = {
         result: 'NO_CHANGE',
-        message: `customerId ${customerId} is already set to ${storageSizeGb}GB storage. Did not modify.`
+        message: `customerId ${customerId} is already set to ${storageSizeGB}GB storage. Did not modify.`
       }
       return response
     }
@@ -376,14 +376,14 @@ class Egnyte {
       },
       body: JSON.stringify({
         domain: customerId,
-        storage: storageSizeGb.toString()
+        storage: storageSizeGB.toString()
       })
     })
     const result = JSON.parse(response.body)
     if (result.msg === 'Plan updated successfully!') {
       const response: IEgnyteUpdateResponse = {
         result: 'SUCCESS',
-        message: `Updated customerId ${customerId} from ${customer.storageGB.total}GB to ${storageSizeGb}GB storage successfully.`
+        message: `Updated customerId ${customerId} from ${customer.storageGB.total}GB to ${storageSizeGB}GB storage successfully.`
       }
       return response
     } else {
