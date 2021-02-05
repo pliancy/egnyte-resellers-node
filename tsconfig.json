@@ -1,20 +1,20 @@
 {
   "compilerOptions": {
-    "moduleResolution": "node",
-    "target": "es2018",
+    "lib": ["ES2020"],
     "module": "commonjs",
-    "strict": true,
-    "declaration": true,
+    "target": "ES2018",
+    "moduleResolution": "node",
     "esModuleInterop": true,
-    "outDir": "lib",
-    "lib": [
-      "ESNext"
-    ]
+    "allowJs": true,
+    "checkJs": true,
+    "importHelpers": true,
+    "jsx": "react",
+    "strict": true,
+    "pretty": true,
+    "sourceMap": true,
+    "declaration": true,
+    "skipLibCheck": true,
+    "outDir": "dist"
   },
-  "include": [
-    "src/**/*.ts"
-  ],
-  "exclude": [
-    "src/**/*.test.ts"
-  ]
+  "include": ["src/**/*"]
 }
