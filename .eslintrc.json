@@ -2,19 +2,25 @@
   "root": true,
   "extends": "standard-with-typescript",
   "env": {
-    "node": true
+    "node": true,
+    "es6": true,
+    "browser": true,
+    "jest": true
   },
   "parserOptions": {
     "ecmaVersion": 2020,
-    "project": "./tsconfig.eslint.json"
+    "project": "./tsconfig.json"
   },
+  "plugins": ["jest"],
   "rules": {
-    "@typescript-eslint/promise-function-async": "off",
+    "comma-dangle": ["error", "always-multiline"],
+    "@typescript-eslint/space-before-function-paren": "off",
     "@typescript-eslint/no-for-in-array": "off",
     "@typescript-eslint/strict-boolean-expressions": "off",
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/restrict-template-expressions": "off",
     "@typescript-eslint/prefer-ts-expect-error": "off",
-    "@typescript-eslint/restrict-plus-operands": "off"
+    "@typescript-eslint/restrict-plus-operands": "off",
+    "@typescript-eslint/promise-function-async": "off"
   }
 }

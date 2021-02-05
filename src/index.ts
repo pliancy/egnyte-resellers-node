@@ -1,5 +1,5 @@
 import qs from 'querystring'
-import got from 'got'
+import axios, { AxiosRequestConfig } from 'axios'
 
 interface IEgnyteCustomer {
   customerEgnyteId: string
@@ -23,65 +23,59 @@ interface IEgnyteUpdateResponse {
   message: string
 }
 
-interface IEgnyteConstructorConfig {
-  username: string
-  password: string
-  timeoutMs?: number
-  resellerId?: string
-  forceLicenseChange?: boolean
-}
-
 interface IEgnyteConfig {
   /** the egnyte resellers portal username */
   username: string
   /** the egnyte resellers portal password */
   password: string
-  resellerId?: string
+  /** timeout threshold in milliseconds */
+  timeoutMs?: number
   forceLicenseChange?: boolean
 }
 
-interface IGotConfigBase {
-  timeout: number
-  followRedirect: boolean
-}
-
-interface IEgnyteRawPowerUserAndStorage{
-  Used: number
-  Unused: number
-  Available: number
-  Domain: string
+interface IUpdateCustomer {
+  powerUsers?: { total?: number }
+  storageGB?: { total?: number }
 }
 
 class Egnyte {
-  _config: IEgnyteConfig
-  _gotConfigBase: IGotConfigBase
+  private readonly _config: IEgnyteConfig
+  private readonly httpConfig: AxiosRequestConfig
+  private resellerId: string
   /**
    * Creates an instance of Egnyte.
    * @param config the config object
    * @memberof Egnyte
    */
-  constructor (config: IEgnyteConstructorConfig) {
-    if (!config.username || !config.password) throw new Error('missing config values username or password when calling the Egnyte constructor')
-    this._config = {
-      username: config.username,
-      password: config.password,
-      resellerId: config.resellerId ?? '',
-      forceLicenseChange: config.forceLicenseChange ?? false
+  constructor(config: IEgnyteConfig) {
+    if (!config.username || !config.password) {
+      throw new Error('missing config values username or password when calling the Egnyte constructor')
     }
-    this._gotConfigBase = {
-      timeout: config.timeoutMs ?? 20000,
-      followRedirect: false
+    this._config = config
+    this.httpConfig = {
+      baseURL: 'https://resellers.egnyte.com',
+      timeout: this._config.timeoutMs ?? 20000,
     }
+    this.resellerId = ''
+  }
+
+  private async _egnyteRequest(url: string, axiosOptions?: AxiosRequestConfig) {
+    const httpOptions: AxiosRequestConfig = {
+      ...this.httpConfig,
+      ...(axiosOptions ?? {}),
+    }
+    const res = await axios(url, httpOptions)
+    return res
   }
 
   /**
    * Gets a csrf token and returns it
    * @returns the csrf token
    */
-  private async _getCsrfToken (): Promise<string> {
-    const query = await got('https://resellers.egnyte.com/accounts/login/?next=/customer/browse/', { ...this._gotConfigBase })
-    const csrfRegexp = query.body.match(/id='csrfmiddlewaretoken'.*value='([a-zA-Z0-9]+)'.*\n/)
-    if (!csrfRegexp) throw new Error('unable to find token in page')
+  private async _getCsrfToken(): Promise<string> {
+    const { data: query } = await this._egnyteRequest('/accounts/login/?next=/customer/browse/', this.httpConfig)
+    const csrfRegexp = query.match(/id='csrfmiddlewaretoken'.*value='([a-zA-Z0-9]+)'.*\n/)
+    if (!csrfRegexp) throw new Error('unable to find CSRF token in egnyte resellers login page')
     return csrfRegexp[1]
   }
 
@@ -90,16 +84,19 @@ class Egnyte {
    * @param authCookie authCookie from _authenticate() call
    * @returns resellerId in string form
    */
-  private async _getResellerId (authCookie: string): Promise<string> {
+  private async _setResellerId(authCookie: string): Promise<string> {
     if (!authCookie) throw new Error('missing authCookie')
-    const query = await got('https://resellers.egnyte.com/customer/browse/', {
-      ...this._gotConfigBase,
-      headers: { cookie: authCookie }
+    const res = await this._egnyteRequest('/customer/browse/', {
+      headers: { cookie: authCookie },
+      maxRedirects: 0,
+      validateStatus: status => status >= 200 && status <= 303,
     })
-    if (query.statusCode === 302) {
-      const location = query.headers.location
+    if (res.status === 302) {
+      const location = res.headers.location
       if (!location) throw new Error('unable to find location header in response')
-      return location.split('/')[5]
+      const resellerId = location.split('/')[5]
+      this.resellerId = resellerId
+      return resellerId
     } else {
       throw new Error('an error occurred attempting to get the resellerId')
     }
@@ -110,15 +107,14 @@ class Egnyte {
    * @param authCookie authCookie from _authenticate() call
    * @returns array of planIds
    */
-  private async _getAllPlanIds (authCookie: string): Promise<string[]> {
+  async _getAllPlanIds(authCookie: string): Promise<string[]> {
     if (!authCookie) throw new Error('missing authCookie')
-    const resellerId = await this._getResellerId(authCookie)
-    const query: any = await got(`https://resellers.egnyte.com/msp/customer_data/${resellerId}`, {
-      ...this._gotConfigBase,
+    if (!this.resellerId) await this._setResellerId(authCookie)
+
+    const { data: res } = await this._egnyteRequest(`/msp/customer_data/${this.resellerId}`, {
       headers: { cookie: authCookie },
-      responseType: 'json'
     })
-    const resultArray = query.body
+    const resultArray = res
       .filter((customer: any) => customer.status !== 'deleted')
       .map((customer: any) => customer.plan_id.toString())
       .filter((v: any, i: any, s: any) => s.indexOf(v) === i)
@@ -131,22 +127,21 @@ class Egnyte {
    * @param password the passworf for auth
    * @returns the auth cookie string
    */
-  private async _authenticate (username: string, password: string): Promise<string> {
-    if (!username || !password) throw new Error('Missing username or password. Unable to authenticate.')
+  private async _authenticate(): Promise<string> {
     const csrfToken = await this._getCsrfToken()
-    const auth = await got('https://resellers.egnyte.com/accounts/login/?next=/customer/browse/', {
-      ...this._gotConfigBase,
+    const auth = await this._egnyteRequest('/accounts/login/?next=/customer/browse/', {
       method: 'post',
-      body: `csrfmiddlewaretoken=${csrfToken}&username=${qs.escape(username)}&password=${qs.escape(password)}&this_is_the_login_form=1`
+      data: `csrfmiddlewaretoken=${csrfToken}&username=${qs.escape(this._config.username)}&password=${qs.escape(
+        this._config.password,
+      )}&this_is_the_login_form=1`,
+      maxRedirects: 0,
+      validateStatus: status => status >= 200 && status <= 303,
     })
-    if (auth.statusCode === 302) {
+    if (auth.status === 302) {
       const setCookieHeader = auth.headers['set-cookie']
       if (!setCookieHeader) throw new Error('unable to find set-cookie header in response')
       const authCookie = setCookieHeader[0].split(';')[0]
-      if (!this._config.resellerId) {
-        const resellerId = await this._getResellerId(authCookie)
-        this._config.resellerId = resellerId
-      }
+      await this._setResellerId(authCookie)
       return authCookie
     } else {
       throw new Error('Authentication failed. Bad username or password.')
@@ -157,54 +152,59 @@ class Egnyte {
    * retrieves all customer data from multiple egnyte resellers API endpoints and models it to be actually readable
    * @returns array of customer objects containing useful stuff
    */
-  async getAllCustomers (): Promise<IEgnyteCustomer[]> {
-    const authCookie = await this._authenticate(this._config.username, this._config.password)
+  async getAllCustomers(): Promise<IEgnyteCustomer[]> {
+    const authCookie = await this._authenticate()
     const planIds = await this._getAllPlanIds(authCookie)
 
-    const customerStats: any = await Promise.all(planIds.map(id => got(`https://resellers.egnyte.com/msp/usage_stats/${this._config.resellerId}/${id}/`, {
-      ...this._gotConfigBase,
-      headers: { cookie: authCookie },
-      responseType: 'json'
-    })))
+    const customers = []
+    for (const planId of planIds) {
+      const usageStatsRes = await this._egnyteRequest(`/msp/usage_stats/${this.resellerId}/${planId}/`, {
+        headers: { cookie: authCookie },
+      })
+      for (const customer of usageStatsRes.data) {
+        const [customerEgnyteId, ref]: [string, any] = Object.entries(customer)[0]
 
-    const resp: IEgnyteCustomer[] = customerStats.map((e: any) => e.body.map((f: any) => {
-      const customerEgnyteId = Object.keys(f)[0]
-      const ref = f[customerEgnyteId]
-      const obj: IEgnyteCustomer = {
-        customerEgnyteId,
-        planId: e.requestUrl.split('/')[6],
-        powerUsers: {
-          total: ref.power_user_stats.Used + ref.power_user_stats.Unused,
-          used: ref.power_user_stats.Used,
-          available: ref.power_user_stats.Available,
-          free: ref.power_user_stats.Unused
-        },
-        storageGB: {
-          total: ref.storage_stats.Used + ref.storage_stats.Unused,
-          used: ref.storage_stats.Used,
-          available: ref.storage_stats.Available,
-          free: ref.storage_stats.Unused
+        const obj: IEgnyteCustomer = {
+          customerEgnyteId,
+          planId,
+          powerUsers: {
+            total: ref.power_user_stats.Used + ref.power_user_stats.Unused,
+            used: ref.power_user_stats.Used,
+            available: ref.power_user_stats.Available,
+            free: ref.power_user_stats.Unused,
+          },
+          storageGB: {
+            total: ref.storage_stats.Used + ref.storage_stats.Unused,
+            used: ref.storage_stats.Used,
+            available: ref.storage_stats.Available,
+            free: ref.storage_stats.Unused,
+          },
         }
-      }
-      return obj
-    })).flat()
 
-    return resp
+        customers.push(obj)
+      }
+    }
+    return customers
   }
 
   /**
    * retrieves one customer's data from multiple egnyte resellers API endpoints and models it to be actually readable
-   * @param customerId the customerId you want to return data on
+   * @param customerId the egnyte customerId you want to return data on
    * @returns the customer object containing useful stuff
    */
-  async getOneCustomer (customerId: string): Promise<IEgnyteCustomer> {
+  async getOneCustomer(customerId: string): Promise<IEgnyteCustomer> {
     const allCustomers = await this.getAllCustomers()
     const customer = allCustomers.find(customer => customer.customerEgnyteId === customerId)
     if (!customer) throw new Error(`unable to find egnyte customer: ${customerId}`)
     return customer
   }
 
-  async updateCustomer (customerId: string, data: { powerUsers?: { total?: number }, storageGB?: { total?: number } }) {
+  /**
+   * Allows you to update a customer by using the model from getOneCustomer directly. This is the recommended way to update licensing
+   * @param customerId the egnyte customerId you want to update
+   * @param data the new desired state of the customer
+   */
+  async updateCustomer(customerId: string, data: IUpdateCustomer) {
     const allCustomers = await this.getAllCustomers()
     const customer = allCustomers.find(customer => customer.customerEgnyteId === customerId)
     if (!customer) throw new Error(`unable to find egnyte customer: ${customerId}`)
@@ -225,56 +225,64 @@ class Egnyte {
    * retrieves available global licensing for both user and storage that isn't assigned to customers
    * @returns object containing the available user and storage data
    */
-  async getAvailableLicensing (): Promise<any> {
-    const authCookie = await this._authenticate(this._config.username, this._config.password)
+  async getPlans(): Promise<any> {
+    const authCookie = await this._authenticate()
     const planIds = await this._getAllPlanIds(authCookie)
 
-    const promises = []
+    const results = await Promise.all(
+      planIds.map(async id => {
+        const [planDataRes, planPowerUserDataRes] = await Promise.all([
+          this._egnyteRequest(`/msp/usage_stats/${this.resellerId}/${id}/`, {
+            headers: { cookie: authCookie },
+          }),
+          this._egnyteRequest(`/msp/get_plan_pu_data/${this.resellerId}/${id}/`, {
+            headers: { cookie: authCookie },
+          }),
+        ])
 
-    for (const id of planIds) {
-      promises.push(got(`https://resellers.egnyte.com/msp/usage_stats/${this._config.resellerId}/${id}/`, {
-        ...this._gotConfigBase,
-        headers: { cookie: authCookie },
-        responseType: 'json'
-      }))
-    }
+        const planData = planDataRes.data
+        const planPowerUserData = planPowerUserDataRes.data
 
-    const result: any[] = await Promise.all(promises)
+        const ref: any = Object.entries(planData[0])[0][1]
 
-    const final = []
-    for (const i in result) {
-      const base = result[i].body[0]
-      const arr: any[] = Object.entries(base)[0]
-      const data = arr[1]
-      final.push({
-        planId: planIds[i],
-        availablePowerUsers: data.power_user_stats.Available,
-        availableStorage: data.storage_stats.Available
-      })
-    }
+        return {
+          planId: id,
+          totalPowerUsers: planPowerUserData.purchased,
+          usedPowerUsers: planPowerUserData.purchased - ref.power_user_stats.Available,
+          availablePowerUsers: ref.power_user_stats.Available,
+          availableStorage: ref.storage_stats.Available,
+          customers: planData.map((customer: object) => Object.keys(customer)[0]),
+        }
+      }),
+    )
 
-    return final
+    return results
   }
 
-  async UpdatePowerUserLicensing (planId: string, newTotalLicenses: number) {
-    const authCookie = await this._authenticate(this._config.username, this._config.password)
-    const res: any = await got(`https://resellers.egnyte.com/msp/change_plan_power_users/${this._config.resellerId}/`, {
-      ...this._gotConfigBase,
-      method: 'post',
-      headers: {
-        Cookie: authCookie,
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
+  /**
+   * Updates a plan's power user licensing count. This will result in a billing change from egnyte. Must be increased in increments of 5
+   * @param planId the planId to update licensing for
+   * @param newTotalLicenses the new total in increments of 5. Use getPlans() to find current total for given plan
+   */
+  async UpdatePowerUserLicensing(planId: string, newTotalLicenses: number) {
+    const authCookie = await this._authenticate()
+    const { data: res } = await this._egnyteRequest(
+      `https://resellers.egnyte.com/msp/change_plan_power_users/${this.resellerId}/`,
+      {
+        method: 'post',
+        headers: {
+          Cookie: authCookie,
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        data: {
+          plan_id: planId,
+          plan_power_users: newTotalLicenses.toString(),
+        },
       },
-      responseType: 'json',
-      body: JSON.stringify({
-        plan_id: planId,
-        plan_power_users: newTotalLicenses.toString()
-      })
-    })
+    )
 
-    if (res.body.success !== true) throw new Error(res.body.msg)
-    return (await this.getAvailableLicensing()).filter((e: any) => e.planId === planId)
+    if (res.success !== true) throw new Error(res.msg)
+    return (await this.getPlans()).filter((e: any) => e.planId === planId)
   }
 
   /**
@@ -283,63 +291,51 @@ class Egnyte {
    * @param numOfUsers how many licenses to assign to customer
    * @returns response object
    */
-  async updateCustomerPowerUsers (customerId: string, numOfUsers: number): Promise<IEgnyteUpdateResponse> {
+  async updateCustomerPowerUsers(customerId: string, numOfUsers: number): Promise<IEgnyteUpdateResponse> {
     customerId = customerId.toLowerCase()
-    let customer: any
-    try {
-      customer = await this.getOneCustomer(customerId)
-      if (customer.powerUsers.available <= 0) throw new Error('No available licenses on customers reseller plan.')
-      if (numOfUsers < customer.powerUsers.used && this._config.forceLicenseChange !== true) {
-        const response: IEgnyteUpdateResponse = {
-          result: 'NO_CHANGE',
-          message: `customerId ${customerId} currently has ${customer.powerUsers.used} power users in use. Refusing to set to ${numOfUsers} power users.`
-        }
-        return response
-      } else if (numOfUsers === customer.powerUsers.total) {
-        const response: IEgnyteUpdateResponse = {
-          result: 'NO_CHANGE',
-          message: `customerId ${customerId} is already set to ${numOfUsers} power users. Did not modify.`
-        }
-        return response
+    const customer = await this.getOneCustomer(customerId)
+    if (customer.powerUsers.available <= 0) throw new Error('No available licenses on customers reseller plan.')
+    if (numOfUsers < customer.powerUsers.used && this._config.forceLicenseChange !== true) {
+      const response: IEgnyteUpdateResponse = {
+        result: 'NO_CHANGE',
+        message: `customerId ${customerId} currently has ${customer.powerUsers.used} power users in use. Refusing to set to ${numOfUsers} power users.`,
       }
-      const authCookie = await this._authenticate(this._config.username, this._config.password)
-      const response = await got(`https://resellers.egnyte.com/msp/change_power_users/${this._config.resellerId}/`, {
-        ...this._gotConfigBase,
-        method: 'post',
-        headers: {
-          Cookie: authCookie,
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({
-          domain: customerId,
-          power_users: numOfUsers.toString()
-        })
-      })
-      const result = JSON.parse(response.body)
-      if (result.msg === 'Plan updated successfully!') {
-        const response: IEgnyteUpdateResponse = {
-          result: 'SUCCESS',
-          message: `Updated customerId ${customerId} from ${customer.powerUsers.total} to ${numOfUsers} power users successfully.`
-        }
-        return response
-      } else {
-        throw new Error(result)
+      return response
+    } else if (numOfUsers === customer.powerUsers.total) {
+      const response: IEgnyteUpdateResponse = {
+        result: 'NO_CHANGE',
+        message: `customerId ${customerId} is already set to ${numOfUsers} power users. Did not modify.`,
       }
-    } catch (err) {
-      // catch the case where we set user below current in use but have allowed it via config.forceLicenseChange flag
-      if (
-        this._config.forceLicenseChange &&
-        err.statusCode === 400 &&
-        JSON.parse(err.response.body).msg === 'CFS plan upgrade failed. Please contact support.'
-      ) {
-        const response: IEgnyteUpdateResponse = {
-          result: 'SUCCESS',
-          message: `Updated customerId ${customerId} from ${customer.powerUsers.total} to ${numOfUsers} power users successfully.`
-        }
-        return response
-      }
-      throw err
+      return response
+    }
+    const authCookie = await this._authenticate()
+    const res = await this._egnyteRequest(`/msp/change_power_users/${this.resellerId}/`, {
+      method: 'post',
+      headers: {
+        Cookie: authCookie,
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      data: {
+        domain: customerId,
+        power_users: numOfUsers.toString(),
+      },
+      validateStatus: status => (status >= 200 && status <= 303) || status === 400,
+    })
+    const result = res.data
+    const response: IEgnyteUpdateResponse = {
+      result: 'SUCCESS',
+      message: `Updated customerId ${customerId} from ${customer.powerUsers.total} to ${numOfUsers} power users successfully.`,
+    }
+    if (result.msg === 'Plan updated successfully!') {
+      return response
+    } else if (
+      result.msg === 'CFS plan upgrade failed. Please contact support.' &&
+      this._config.forceLicenseChange &&
+      res.status === 400
+    ) {
+      return response
+    } else {
+      throw new Error(result.msg)
     }
   }
 
@@ -349,45 +345,44 @@ class Egnyte {
    * @param storageSizeGB how much storage the customer should have in GB
    * @returns response object
    */
-  async updateCustomerStorage (customerId: string, storageSizeGB: number): Promise<IEgnyteUpdateResponse> {
+  async updateCustomerStorage(customerId: string, storageSizeGB: number): Promise<IEgnyteUpdateResponse> {
     customerId = customerId.toLowerCase()
     const customer = await this.getOneCustomer(customerId)
     if (storageSizeGB < customer.storageGB.used) {
       const response: IEgnyteUpdateResponse = {
         result: 'NO_CHANGE',
-        message: `customerId ${customerId} currently has ${customer.storageGB.used}GB storage in use. Refusing to set to ${storageSizeGB}GB storage.`
+        message: `customerId ${customerId} currently has ${customer.storageGB.used}GB storage in use. Refusing to set to ${storageSizeGB}GB storage.`,
       }
       return response
     } else if (storageSizeGB === customer.storageGB.total) {
       const response: IEgnyteUpdateResponse = {
         result: 'NO_CHANGE',
-        message: `customerId ${customerId} is already set to ${storageSizeGB}GB storage. Did not modify.`
+        message: `customerId ${customerId} is already set to ${storageSizeGB}GB storage. Did not modify.`,
       }
       return response
     }
-    const authCookie = await this._authenticate(this._config.username, this._config.password)
-    const response = await got(`https://resellers.egnyte.com/msp/change_storage/${this._config.resellerId}/`, {
-      ...this._gotConfigBase,
+    const authCookie = await this._authenticate()
+    const response = await this._egnyteRequest(`/msp/change_storage/${this.resellerId}/`, {
       method: 'post',
       headers: {
         Cookie: authCookie,
         'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
+        'X-Requested-With': 'XMLHttpRequest',
       },
-      body: JSON.stringify({
+      data: {
         domain: customerId,
-        storage: storageSizeGB.toString()
-      })
+        storage: storageSizeGB.toString(),
+      },
     })
-    const result = JSON.parse(response.body)
+    const result = response.data
     if (result.msg === 'Plan updated successfully!') {
       const response: IEgnyteUpdateResponse = {
         result: 'SUCCESS',
-        message: `Updated customerId ${customerId} from ${customer.storageGB.total}GB to ${storageSizeGB}GB storage successfully.`
+        message: `Updated customerId ${customerId} from ${customer.storageGB.total}GB to ${storageSizeGB}GB storage successfully.`,
       }
       return response
     } else {
-      throw new Error(result)
+      throw new Error(result.msg)
     }
   }
 }
