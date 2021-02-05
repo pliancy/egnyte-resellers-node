@@ -1,7 +1,7 @@
 import qs from 'querystring'
 import axios, { AxiosRequestConfig } from 'axios'
 
-interface IEgnyteCustomer {
+interface EgnyteCustomer {
   customerEgnyteId: string
   planId: string
   powerUsers: {
@@ -18,12 +18,12 @@ interface IEgnyteCustomer {
   }
 }
 
-interface IEgnyteUpdateResponse {
+interface EgnyteUpdateResponse {
   result: string
   message: string
 }
 
-interface IEgnyteConfig {
+interface EgnyteConfig {
   /** the egnyte resellers portal username */
   username: string
   /** the egnyte resellers portal password */
@@ -33,13 +33,13 @@ interface IEgnyteConfig {
   forceLicenseChange?: boolean
 }
 
-interface IUpdateCustomer {
+interface UpdateCustomer {
   powerUsers?: { total?: number }
   storageGB?: { total?: number }
 }
 
 class Egnyte {
-  private readonly _config: IEgnyteConfig
+  private readonly _config: EgnyteConfig
   private readonly httpConfig: AxiosRequestConfig
   private resellerId: string
   /**
@@ -47,7 +47,7 @@ class Egnyte {
    * @param config the config object
    * @memberof Egnyte
    */
-  constructor(config: IEgnyteConfig) {
+  constructor(config: EgnyteConfig) {
     if (!config.username || !config.password) {
       throw new Error('missing config values username or password when calling the Egnyte constructor')
     }
@@ -152,7 +152,7 @@ class Egnyte {
    * retrieves all customer data from multiple egnyte resellers API endpoints and models it to be actually readable
    * @returns array of customer objects containing useful stuff
    */
-  async getAllCustomers(): Promise<IEgnyteCustomer[]> {
+  async getAllCustomers(): Promise<EgnyteCustomer[]> {
     const authCookie = await this._authenticate()
     const planIds = await this._getAllPlanIds(authCookie)
 
@@ -164,7 +164,7 @@ class Egnyte {
       for (const customer of usageStatsRes.data) {
         const [customerEgnyteId, ref]: [string, any] = Object.entries(customer)[0]
 
-        const obj: IEgnyteCustomer = {
+        const obj: EgnyteCustomer = {
           customerEgnyteId,
           planId,
           powerUsers: {
@@ -192,7 +192,7 @@ class Egnyte {
    * @param customerId the egnyte customerId you want to return data on
    * @returns the customer object containing useful stuff
    */
-  async getOneCustomer(customerId: string): Promise<IEgnyteCustomer> {
+  async getOneCustomer(customerId: string): Promise<EgnyteCustomer> {
     const allCustomers = await this.getAllCustomers()
     const customer = allCustomers.find(customer => customer.customerEgnyteId === customerId)
     if (!customer) throw new Error(`unable to find egnyte customer: ${customerId}`)
@@ -204,7 +204,7 @@ class Egnyte {
    * @param customerId the egnyte customerId you want to update
    * @param data the new desired state of the customer
    */
-  async updateCustomer(customerId: string, data: IUpdateCustomer) {
+  async updateCustomer(customerId: string, data: UpdateCustomer) {
     const allCustomers = await this.getAllCustomers()
     const customer = allCustomers.find(customer => customer.customerEgnyteId === customerId)
     if (!customer) throw new Error(`unable to find egnyte customer: ${customerId}`)
@@ -291,18 +291,18 @@ class Egnyte {
    * @param numOfUsers how many licenses to assign to customer
    * @returns response object
    */
-  async updateCustomerPowerUsers(customerId: string, numOfUsers: number): Promise<IEgnyteUpdateResponse> {
+  async updateCustomerPowerUsers(customerId: string, numOfUsers: number): Promise<EgnyteUpdateResponse> {
     customerId = customerId.toLowerCase()
     const customer = await this.getOneCustomer(customerId)
     if (customer.powerUsers.available <= 0) throw new Error('No available licenses on customers reseller plan.')
     if (numOfUsers < customer.powerUsers.used && this._config.forceLicenseChange !== true) {
-      const response: IEgnyteUpdateResponse = {
+      const response: EgnyteUpdateResponse = {
         result: 'NO_CHANGE',
         message: `customerId ${customerId} currently has ${customer.powerUsers.used} power users in use. Refusing to set to ${numOfUsers} power users.`,
       }
       return response
     } else if (numOfUsers === customer.powerUsers.total) {
-      const response: IEgnyteUpdateResponse = {
+      const response: EgnyteUpdateResponse = {
         result: 'NO_CHANGE',
         message: `customerId ${customerId} is already set to ${numOfUsers} power users. Did not modify.`,
       }
@@ -322,7 +322,7 @@ class Egnyte {
       validateStatus: status => (status >= 200 && status <= 303) || status === 400,
     })
     const result = res.data
-    const response: IEgnyteUpdateResponse = {
+    const response: EgnyteUpdateResponse = {
       result: 'SUCCESS',
       message: `Updated customerId ${customerId} from ${customer.powerUsers.total} to ${numOfUsers} power users successfully.`,
     }
@@ -345,17 +345,17 @@ class Egnyte {
    * @param storageSizeGB how much storage the customer should have in GB
    * @returns response object
    */
-  async updateCustomerStorage(customerId: string, storageSizeGB: number): Promise<IEgnyteUpdateResponse> {
+  async updateCustomerStorage(customerId: string, storageSizeGB: number): Promise<EgnyteUpdateResponse> {
     customerId = customerId.toLowerCase()
     const customer = await this.getOneCustomer(customerId)
     if (storageSizeGB < customer.storageGB.used) {
-      const response: IEgnyteUpdateResponse = {
+      const response: EgnyteUpdateResponse = {
         result: 'NO_CHANGE',
         message: `customerId ${customerId} currently has ${customer.storageGB.used}GB storage in use. Refusing to set to ${storageSizeGB}GB storage.`,
       }
       return response
     } else if (storageSizeGB === customer.storageGB.total) {
-      const response: IEgnyteUpdateResponse = {
+      const response: EgnyteUpdateResponse = {
         result: 'NO_CHANGE',
         message: `customerId ${customerId} is already set to ${storageSizeGB}GB storage. Did not modify.`,
       }
@@ -376,7 +376,7 @@ class Egnyte {
     })
     const result = response.data
     if (result.msg === 'Plan updated successfully!') {
-      const response: IEgnyteUpdateResponse = {
+      const response: EgnyteUpdateResponse = {
         result: 'SUCCESS',
         message: `Updated customerId ${customerId} from ${customer.storageGB.total}GB to ${storageSizeGB}GB storage successfully.`,
       }
