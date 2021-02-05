@@ -5,7 +5,8 @@ docs
 src
 jest.config.js
 tsconfig.json
-tslint.json
+tsconfig.release.json
+.eslintrc.json
 .prettierrc.json
 
 # Logs
