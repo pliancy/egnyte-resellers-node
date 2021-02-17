@@ -1,0 +1,17 @@
+# These settings are synced to GitHub by https://probot.github.io/apps/settings/
+# pliancy/.github:.github/settings.yaml
+
+repository:
+  # See https://developer.github.com/v3/repos/#edit for all available settings.
+
+  # The name of the repository. Changing this will rename the repository
+  name: egnyte-resellers-node
+
+  # A short description of the repository that will show up on GitHub
+  description: Egnyte's Resellers API is undocumented and questionable... this library makes it usable
+  
+  # A URL with more information about the repository
+  homepage: https://www.npmjs.com/package/egnyte-resellers
+
+  # A comma-separated list of topics to set on the repository
+  topics: nodejs, module, egnyte, egnyte-resellers
