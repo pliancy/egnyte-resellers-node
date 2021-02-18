@@ -2,7 +2,7 @@
   "name": "egnyte-resellers",
   "version": "1.2.5",
   "description": "Library for managing things against the undocumented egnyte resellers API.",
-  "homepage": "https://github.com/zenion/egnyte-resellers-node",
+  "homepage": "https://github.com/pliancy/egnyte-resellers-node",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
@@ -14,11 +14,7 @@
     "test": "npm run lint && jest",
     "prepublishOnly": "npm run build"
   },
-  "keywords": [
-    "egnyte",
-    "resellers",
-    "msp"
-  ],
+  "keywords": ["egnyte", "resellers", "msp"],
   "author": "Josh Stout <joshstout@gmail.com>",
   "license": "MIT",
   "repository": {
@@ -57,9 +53,6 @@
     }
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ]
+    "*.{js,jsx,ts,tsx}": ["eslint --fix", "prettier --write"]
   }
 }
