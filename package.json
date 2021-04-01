@@ -7,7 +7,7 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "clean": "rimraf coverage dist tmp",
-    "lint": "eslint .",
+    "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint --fix .",
     "build": "npm run clean && npm run test && tsc -p tsconfig.release.json",
     "build:check": "npm run clean && npm run test && tsc --noEmit -p tsconfig.release.json",
