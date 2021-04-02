@@ -52,9 +52,14 @@ class Egnyte {
       throw new Error('missing config values username or password when calling the Egnyte constructor')
     }
     this._config = config
+
+    // If timeoutMs is provided ensure it's a number or default to 20000
+    const ms = this._config.timeoutMs ?? -1
+    const n = parseInt(ms as any)
+    const timeout = !isNaN(n) && Math.abs(n) > 1 ? n : 20000
     this.httpConfig = {
       baseURL: 'https://resellers.egnyte.com',
-      timeout: this._config.timeoutMs ?? 20000,
+      timeout,
     }
     this.resellerId = ''
   }

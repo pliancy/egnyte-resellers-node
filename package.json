@@ -1,6 +1,6 @@
 {
   "name": "egnyte-resellers",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "description": "Library for managing things against the undocumented egnyte resellers API.",
   "homepage": "https://github.com/pliancy/egnyte-resellers-node",
   "main": "./dist/index.js",
