@@ -1,0 +1,50 @@
+name: Release
+on:
+  push:
+    branches:
+      - master
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14
+      - name: Install dependencies
+        run: yarn
+      - name: Build
+        run: yarn build
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          yarn semantic-release
+          cp dist/package.json .
+      - name: Auto Commit
+        uses: stefanzweifel/git-auto-commit-action@v4
+        env:
+          SKIP_COMMITIZEN: true
+        with:
+          # Optional, but recommended
+          # Defaults to "Apply automatic changes"
+          commit_message: ${{ github.event.head_commit.message }}
+
+          # Optional glob pattern of files which should be added to the commit
+          # Defaults to all (.)
+          # See the `pathspec`-documentation for git
+          # - https://git-scm.com/docs/git-add#Documentation/git-add.txt-ltpathspecgt82308203
+          # - https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec
+          file_pattern: package.json
+
+          # Optional. Disable dirty check and always try to create a commit and push
+          skip_dirty_check: true
+
+          # Optional. Skip internal call to `git fetch`
+          skip_fetch: true

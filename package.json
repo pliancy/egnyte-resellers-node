@@ -6,14 +6,15 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "clean": "rimraf coverage dist tmp",
-    "lint": "eslint \"src/**/*.ts\" --fix",
     "build": "yarn clean && yarn test && tsc -p tsconfig.release.json",
     "build:check": "tsc --noEmit -p tsconfig.release.json",
-    "qa": "yarn lint && yarn test && yarn clean && yarn build:check",
-    "test": "jest",
+    "clean": "rimraf coverage dist tmp",
+    "lint": "eslint \"src/**/*.ts\" --fix",
     "postinstall": "[ -d '.husky' ] && husky install || true",
-    "prepublishOnly": "yarn build"
+    "prepublishOnly": "yarn build",
+    "qa": "yarn lint && yarn test && yarn clean && yarn build:check",
+    "semantic-release": "semantic-release",
+    "test": "jest",
   },
   "keywords": [
     "egnyte",
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@pliancy/eslint-config-ts": "0.0.5",
+    "@pliancy/semantic-release-config-npm": "^2.1.0",
     "@types/jest": "26.0.24",
     "@types/node": "14.17.5",
     "commitizen": "^4.2.4",
