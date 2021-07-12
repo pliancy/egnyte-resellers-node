@@ -14,7 +14,11 @@
     "test": "npm run lint && jest",
     "prepublishOnly": "npm run build"
   },
-  "keywords": ["egnyte", "resellers", "msp"],
+  "keywords": [
+    "egnyte",
+    "resellers",
+    "msp"
+  ],
   "author": "Josh Stout <joshstout@gmail.com>",
   "license": "MIT",
   "repository": {
@@ -45,7 +49,8 @@
     "typescript": "^4.1.3"
   },
   "volta": {
-    "node": "14.15.4"
+    "node": "14.15.4",
+    "yarn": "1.22.10"
   },
   "husky": {
     "hooks": {
@@ -53,6 +58,9 @@
     }
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx}": ["eslint --fix", "prettier --write"]
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
   }
 }
