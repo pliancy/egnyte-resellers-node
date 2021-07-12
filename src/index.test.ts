@@ -5,38 +5,38 @@
 //   password: 'b'
 // })
 
-import Egnyte from "./index";
+import Egnyte from './index'
 
-describe("http config", () => {
-    it("defaults to a 20000ms timeout given timeoutMs is undefined", async () => {
+describe('http config', () => {
+    it('defaults to a 20000ms timeout given timeoutMs is undefined', async () => {
         const ern = new Egnyte({
-            username: "user",
-            password: "pass",
-        });
+            username: 'user',
+            password: 'pass',
+        })
 
-        expect(ern["httpConfig"].timeout).toBe(20000);
-    });
+        expect(ern['httpConfig'].timeout).toBe(20000)
+    })
 
-    it("defaults to a 20000ms timeout given timeoutMs is not parsable as an integer", async () => {
+    it('defaults to a 20000ms timeout given timeoutMs is not parsable as an integer', async () => {
         const ern = new Egnyte({
-            username: "user",
-            password: "pass",
-            timeoutMs: "NotANumber" as any,
-        });
+            username: 'user',
+            password: 'pass',
+            timeoutMs: 'NotANumber' as any,
+        })
 
-        expect(ern["httpConfig"].timeout).toBe(20000);
-    });
+        expect(ern['httpConfig'].timeout).toBe(20000)
+    })
 
-    it("sets timeout given timeoutMs is parsable as an integer", async () => {
+    it('sets timeout given timeoutMs is parsable as an integer', async () => {
         const ern = new Egnyte({
-            username: "user",
-            password: "pass",
-            timeoutMs: "30000," as any,
-        });
+            username: 'user',
+            password: 'pass',
+            timeoutMs: '30000,' as any,
+        })
 
-        expect(ern["httpConfig"].timeout).toBe(30000);
-    });
-});
+        expect(ern['httpConfig'].timeout).toBe(30000)
+    })
+})
 
 // describe('Helpers', () => {
 //   beforeEach(() => {
