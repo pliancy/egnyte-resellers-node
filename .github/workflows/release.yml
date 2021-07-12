@@ -36,6 +36,9 @@ jobs:
           # Defaults to "Apply automatic changes"
           commit_message: ${{ github.event.head_commit.message }}
 
+          # Avoid running husky here
+          commit_options: '--no-verify'
+
           # Optional glob pattern of files which should be added to the commit
           # Defaults to all (.)
           # See the `pathspec`-documentation for git
