@@ -34,7 +34,7 @@ jobs:
         with:
           # Optional, but recommended
           # Defaults to "Apply automatic changes"
-          commit_message: ${{ github.event.head_commit.message }}
+          commit_message: ${{ github.event.head_commit.message }} [skip ci]
 
           # Avoid running husky here
           commit_options: '--no-verify'
