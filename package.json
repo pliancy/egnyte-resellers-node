@@ -6,14 +6,16 @@
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
-    "build": "yarn clean && yarn test && tsc -p tsconfig.release.json && cpy package.json dist && cpy README.md dist",
-    "build:check": "tsc --noEmit -p tsconfig.release.json",
+    "build": "run-s -l clean test tsc copy",
+    "build:check": "tsc --noEmit",
     "clean": "rimraf coverage dist tmp",
+    "copy": "cpy package.json dist && cpy README.md dist",
     "lint": "eslint \"src/**/*.ts\" --fix",
     "postinstall": "[ -d '.husky' ] && husky install || true",
-    "qa": "yarn lint && yarn test && yarn clean && yarn build:check",
+    "qa": "run-s -l lint test clean build:check",
     "semantic-release": "semantic-release",
-    "test": "jest"
+    "test": "jest",
+    "tsc": "tsc -p tsconfig.build.json"
   },
   "keywords": [
     "egnyte",
@@ -39,6 +41,7 @@
     "cz-conventional-changelog": "3.3.0",
     "husky": "7.0.1",
     "jest": "27.0.6",
+    "npm-run-all": "^4.1.5",
     "rimraf": "3.0.2",
     "ts-jest": "27.0.3",
     "ts-node": "9.1.1",
