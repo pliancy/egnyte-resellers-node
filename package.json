@@ -37,7 +37,7 @@
   "name": "egnyte-resellers",
   "repository": {
     "type": "git",
-    "url": "https://github.com/zenion/egnyte-resellers-node"
+    "url": "https://github.com/pliancy/egnyte-resellers-node"
   },
   "scripts": {
     "build": "run-s -l clean test tsc copy",
