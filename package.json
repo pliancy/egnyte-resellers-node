@@ -1,39 +1,17 @@
 {
-  "name": "egnyte-resellers",
-  "version": "1.2.7",
-  "description": "Library for managing things against the undocumented egnyte resellers API.",
-  "homepage": "https://github.com/pliancy/egnyte-resellers-node",
-  "main": "index.js",
-  "types": "index.d.ts",
-  "scripts": {
-    "build": "run-s -l clean test tsc copy",
-    "build:check": "tsc --noEmit",
-    "clean": "rimraf coverage dist tmp",
-    "copy": "cpy package.json dist && cpy README.md dist",
-    "lint": "eslint \"src/**/*.ts\" --fix",
-    "postinstall": "[ -d '.husky' ] && husky install || true",
-    "qa": "run-s -l lint test clean build:check",
-    "semantic-release": "semantic-release",
-    "test": "jest",
-    "tsc": "tsc -p tsconfig.build.json"
-  },
-  "keywords": [
-    "egnyte",
-    "resellers",
-    "msp"
-  ],
   "author": "Josh Stout <joshstout@gmail.com>",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/zenion/egnyte-resellers-node"
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
   },
   "dependencies": {
     "axios": "0.21.1"
   },
+  "description": "Library for managing things against the undocumented egnyte resellers API.",
   "devDependencies": {
     "@pliancy/eslint-config-ts": "0.0.5",
-    "@pliancy/semantic-release-config-npm": "^2.1.0",
+    "@pliancy/semantic-release-config-npm": "2.1.0",
     "@types/jest": "26.0.24",
     "@types/node": "14.17.5",
     "commitizen": "4.2.4",
@@ -41,19 +19,42 @@
     "cz-conventional-changelog": "3.3.0",
     "husky": "7.0.1",
     "jest": "27.0.6",
-    "npm-run-all": "^4.1.5",
+    "npm-run-all": "4.1.5",
+    "pinst": "^2.1.6",
     "rimraf": "3.0.2",
     "ts-jest": "27.0.3",
     "ts-node": "9.1.1",
     "typescript": "4.3.5"
   },
+  "homepage": "https://github.com/pliancy/egnyte-resellers-node",
+  "keywords": [
+    "egnyte",
+    "resellers",
+    "msp"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "name": "egnyte-resellers",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zenion/egnyte-resellers-node"
+  },
+  "scripts": {
+    "build": "run-s -l clean test tsc copy",
+    "build:check": "tsc --noEmit",
+    "clean": "rimraf coverage dist tmp",
+    "copy": "pinst --disable && cpy package.json dist && cpy README.md dist && pinst enable",
+    "lint": "eslint \"src/**/*.ts\" --fix",
+    "postinstall": "husky install",
+    "qa": "run-s -l lint test clean build:check",
+    "semantic-release": "semantic-release",
+    "test": "jest",
+    "tsc": "tsc -p tsconfig.build.json"
+  },
+  "types": "index.d.ts",
+  "version": "1.2.7",
   "volta": {
     "node": "14.15.4",
     "yarn": "1.22.10"
-  },
-  "config": {
-    "commitizen": {
-      "path": "./node_modules/cz-conventional-changelog"
-    }
   }
 }
