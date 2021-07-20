@@ -87,7 +87,7 @@ class Egnyte {
         const csrfMiddlewareTokenArray = html('[name=csrfmiddlewaretoken]')
         const csrfMiddlewareToken = csrfMiddlewareTokenArray[0].attribs.value
 
-        // Parse cookies to get csrfToken
+        // Regex cookies to get csrfToken
         const csrfToken = res.headers['set-cookie']
             .find((e: string) => e.includes('csrftoken'))
             .match(/csrftoken=(.*); expires/)[1]
