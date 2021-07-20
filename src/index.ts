@@ -1,7 +1,6 @@
 import qs from 'querystring'
 import axios, { AxiosRequestConfig } from 'axios'
 import cheerio from 'cheerio'
-import cookieParser from 'set-cookie-parser'
 
 interface EgnyteCustomer {
     customerEgnyteId: string
@@ -89,14 +88,12 @@ class Egnyte {
         const csrfMiddlewareToken = csrfMiddlewareTokenArray[0].attribs.value
 
         // Parse cookies to get csrfToken
-        const csrfToken = cookieParser.parse(res.headers['set-cookie'], {
-            decodeValues: true,
-            map: true,
-        })
-
-        if (!csrfMiddlewareToken && !csrfToken)
+        const csrfToken = res.headers['set-cookie']
+            .find((e: string) => e.includes('csrftoken'))
+            .match(/csrftoken=(.*); expires/)[1]
+        if (!csrfMiddlewareToken || !csrfToken)
             throw new Error('unable to find CSRF token in egnyte resellers login page')
-        return { csrfMiddlewareToken, csrfToken: csrfToken.csrftoken.value }
+        return { csrfMiddlewareToken, csrfToken }
     }
 
     /**
