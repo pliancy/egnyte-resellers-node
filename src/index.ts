@@ -80,12 +80,11 @@ class Egnyte {
      * Gets a csrf token and returns it
      * @returns the csrf token
      */
-    private async _getCsrfTokens(): Promise<any> {
+    private async _getCsrfTokens() {
         const res = await this._egnyteRequest('accounts/login/', this.httpConfig)
         // Use Cheerio to parse webpage for csrfmiddlewaretoken
         const html = cheerio.load(res.data)
-        const csrfMiddlewareTokenArray = html('[name=csrfmiddlewaretoken]')
-        const csrfMiddlewareToken = csrfMiddlewareTokenArray[0].attribs.value
+        const csrfMiddlewareToken = html('[name=csrfmiddlewaretoken]').val()
 
         // Regex cookies to get csrfToken
         const csrfToken = res.headers['set-cookie']
@@ -141,20 +140,20 @@ class Egnyte {
     /**
      * authenticate to egnyte api. gets auth cookie
      * @param username the username for auth
-     * @param password the passworf for auth
+     * @param password the password for auth
      * @returns the auth cookie string
      */
     private async _authenticate(): Promise<any> {
-        const csrfTokens = await this._getCsrfTokens()
+        const { csrfMiddlewareToken, csrfToken } = await this._getCsrfTokens()
         const auth = await this._egnyteRequest('/accounts/login/', {
             method: 'post',
-            data: `csrfmiddlewaretoken=${csrfTokens.csrfMiddlewareToken}&username=${qs.escape(
+            data: `csrfmiddlewaretoken=${csrfMiddlewareToken}&username=${qs.escape(
                 this._config.username,
             )}&password=${qs.escape(this._config.password)}&this_is_the_login_form=1`,
             maxRedirects: 0,
             headers: {
                 Referer: 'https://resellers.egnyte.com/accounts/login/',
-                Cookie: `csrftoken=${csrfTokens.csrfToken}`,
+                Cookie: `csrftoken=${csrfToken}`,
             },
             validateStatus: (status) => status >= 200 && status <= 303,
         })
