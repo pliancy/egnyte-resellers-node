@@ -1,5 +1,7 @@
 import qs from 'querystring'
 import axios, { AxiosRequestConfig } from 'axios'
+import cheerio from 'cheerio'
+import cookieParser from 'set-cookie-parser'
 
 interface EgnyteCustomer {
     customerEgnyteId: string
@@ -79,14 +81,22 @@ class Egnyte {
      * Gets a csrf token and returns it
      * @returns the csrf token
      */
-    private async _getCsrfToken(): Promise<string> {
-        const { data: query } = await this._egnyteRequest(
-            '/accounts/login/?next=/customer/browse/',
-            this.httpConfig,
-        )
-        const csrfRegexp = query.match(/id='csrfmiddlewaretoken'.*value='([a-zA-Z0-9]+)'.*\n/)
-        if (!csrfRegexp) throw new Error('unable to find CSRF token in egnyte resellers login page')
-        return csrfRegexp[1]
+    private async _getCsrfTokens(): Promise<any> {
+        const res = await this._egnyteRequest('accounts/login/', this.httpConfig)
+        // Use Cheerio to parse webpage for csrfmiddlewaretoken
+        const html = cheerio.load(res.data)
+        const csrfMiddlewareTokenArray = html('[name=csrfmiddlewaretoken]')
+        const csrfMiddlewareToken = csrfMiddlewareTokenArray[0].attribs.value
+
+        // Parse cookies to get csrfToken
+        const csrfToken = cookieParser.parse(res.headers['set-cookie'], {
+            decodeValues: true,
+            map: true,
+        })
+
+        if (!csrfMiddlewareToken && !csrfToken)
+            throw new Error('unable to find CSRF token in egnyte resellers login page')
+        return { csrfMiddlewareToken, csrfToken: csrfToken.csrftoken.value }
     }
 
     /**
@@ -137,14 +147,18 @@ class Egnyte {
      * @param password the passworf for auth
      * @returns the auth cookie string
      */
-    private async _authenticate(): Promise<string> {
-        const csrfToken = await this._getCsrfToken()
-        const auth = await this._egnyteRequest('/accounts/login/?next=/customer/browse/', {
+    private async _authenticate(): Promise<any> {
+        const csrfTokens = await this._getCsrfTokens()
+        const auth = await this._egnyteRequest('/accounts/login/', {
             method: 'post',
-            data: `csrfmiddlewaretoken=${csrfToken}&username=${qs.escape(
+            data: `csrfmiddlewaretoken=${csrfTokens.csrfMiddlewareToken}&username=${qs.escape(
                 this._config.username,
             )}&password=${qs.escape(this._config.password)}&this_is_the_login_form=1`,
             maxRedirects: 0,
+            headers: {
+                Referer: 'https://resellers.egnyte.com/accounts/login/',
+                Cookie: `csrftoken=${csrfTokens.csrfToken}`,
+            },
             validateStatus: (status) => status >= 200 && status <= 303,
         })
         if (auth.status === 302) {
