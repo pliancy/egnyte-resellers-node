@@ -162,7 +162,7 @@ class Egnyte {
             if (!setCookieHeader) throw new Error('unable to find set-cookie header in response')
             const authCookie = setCookieHeader[0].split(';')[0]
             await this._setResellerId(authCookie)
-            return authCookie
+            return { authCookie, csrfToken }
         } else {
             throw new Error('Authentication failed. Bad username or password.')
         }
@@ -173,7 +173,7 @@ class Egnyte {
      * @returns array of customer objects containing useful stuff
      */
     async getAllCustomers(): Promise<EgnyteCustomer[]> {
-        const authCookie = await this._authenticate()
+        const { authCookie, csrfToken } = await this._authenticate()
         const planIds = await this._getAllPlanIds(authCookie)
 
         const customers = []
@@ -181,7 +181,7 @@ class Egnyte {
             const usageStatsRes = await this._egnyteRequest(
                 `/msp/usage_stats/${this.resellerId}/${planId}/`,
                 {
-                    headers: { cookie: authCookie },
+                    headers: { cookie: authCookie, 'X-CSRFToken': csrfToken },
                 },
             )
             for (const customer of usageStatsRes.data) {
@@ -249,17 +249,17 @@ class Egnyte {
      * @returns object containing the available user and storage data
      */
     async getPlans(): Promise<any> {
-        const authCookie = await this._authenticate()
+        const { authCookie, csrfToken } = await this._authenticate()
         const planIds = await this._getAllPlanIds(authCookie)
 
         const results = await Promise.all(
             planIds.map(async (id) => {
                 const [planDataRes, planPowerUserDataRes] = await Promise.all([
                     this._egnyteRequest(`/msp/usage_stats/${this.resellerId}/${id}/`, {
-                        headers: { cookie: authCookie },
+                        headers: { cookie: authCookie, 'X-CSRFToken': csrfToken },
                     }),
                     this._egnyteRequest(`/msp/get_plan_pu_data/${this.resellerId}/${id}/`, {
-                        headers: { cookie: authCookie },
+                        headers: { cookie: authCookie, 'X-CSRFToken': csrfToken },
                     }),
                 ])
 
@@ -288,14 +288,15 @@ class Egnyte {
      * @param newTotalLicenses the new total in increments of 5. Use getPlans() to find current total for given plan
      */
     async UpdatePowerUserLicensing(planId: string, newTotalLicenses: number) {
-        const authCookie = await this._authenticate()
+        const { authCookie, csrfToken } = await this._authenticate()
         const { data: res } = await this._egnyteRequest(
             `https://resellers.egnyte.com/msp/change_plan_power_users/${this.resellerId}/`,
             {
                 method: 'post',
                 headers: {
-                    Cookie: authCookie,
+                    Cookie: `${authCookie}; csrftoken=${csrfToken}`,
                     'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken,
                 },
                 data: {
                     plan_id: planId,
@@ -314,10 +315,7 @@ class Egnyte {
      * @param numOfUsers how many licenses to assign to customer
      * @returns response object
      */
-    async updateCustomerPowerUsers(
-        customerId: string,
-        numOfUsers: number,
-    ): Promise<EgnyteUpdateResponse> {
+    async updateCustomerPowerUsers(customerId: string, numOfUsers: number): Promise<any> {
         customerId = customerId.toLowerCase()
         const customer = await this.getOneCustomer(customerId)
         if (customer.powerUsers.available <= 0)
@@ -335,12 +333,15 @@ class Egnyte {
             }
             return response
         }
-        const authCookie = await this._authenticate()
+        const { authCookie, csrfToken } = await this._authenticate()
+
         const res = await this._egnyteRequest(`/msp/change_power_users/${this.resellerId}/`, {
             method: 'post',
             headers: {
-                Cookie: authCookie,
+                Cookie: `${authCookie}; csrftoken=${csrfToken}`,
                 'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken,
+                Referer: 'https://resellers.egnyte.com',
             },
             data: {
                 domain: customerId,
@@ -391,13 +392,14 @@ class Egnyte {
             }
             return response
         }
-        const authCookie = await this._authenticate()
+        const { authCookie, csrfToken } = await this._authenticate()
         const response = await this._egnyteRequest(`/msp/change_storage/${this.resellerId}/`, {
             method: 'post',
             headers: {
-                Cookie: authCookie,
+                Cookie: `${authCookie}; csrftoken=${csrfToken}`,
                 'Content-Type': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken,
             },
             data: {
                 domain: customerId,
