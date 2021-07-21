@@ -245,7 +245,7 @@ class Egnyte {
     }
 
     /**
-     * retrieves available global licensing for both user and storage that isn't assigned to customers
+     * retrieves available global licensing for both user and storage that aren't assigned to customers
      * @returns object containing the available user and storage data
      */
     async getPlans(): Promise<any> {
