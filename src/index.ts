@@ -339,12 +339,12 @@ class Egnyte {
             return response
         }
         if (autoAddToPool) {
-            const plans = await this.getPlans()
-            const { planId, totalPowerUsers, availablePowerUsers } = plans.find(
-                (e: any) => e.planId === customer.planId,
-            )
             const usersNeeded = numOfUsers - customer.powerUsers.total
-            if (usersNeeded > availablePowerUsers) {
+            if (usersNeeded > customer.powerUsers.available) {
+                const plans = await this.getPlans()
+                const { planId, totalPowerUsers, availablePowerUsers } = plans.find(
+                    (e: any) => e.planId === customer.planId,
+                )
                 const licensesToAdd = Math.ceil((usersNeeded - availablePowerUsers) / 5) * 5
                 const updatedLicenesTotal = licensesToAdd + totalPowerUsers
 
