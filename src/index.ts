@@ -297,6 +297,7 @@ class Egnyte {
                     Cookie: `${authCookie}; csrftoken=${csrfToken}`,
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRFToken': csrfToken,
+                    Referer: 'https://resellers.egnyte.com',
                 },
                 data: {
                     plan_id: planId,
@@ -346,7 +347,8 @@ class Egnyte {
             if (usersNeeded > availablePowerUsers) {
                 const licensesToAdd = Math.ceil((usersNeeded - availablePowerUsers) / 5) * 5
                 const updatedLicenesTotal = licensesToAdd + totalPowerUsers
-                this.UpdatePowerUserLicensing(planId, updatedLicenesTotal)
+
+                await this.UpdatePowerUserLicensing(planId, updatedLicenesTotal)
             }
         }
         const { authCookie, csrfToken } = await this._authenticate()
