@@ -297,6 +297,7 @@ class Egnyte {
                     Cookie: `${authCookie}; csrftoken=${csrfToken}`,
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRFToken': csrfToken,
+                    Referer: 'https://resellers.egnyte.com',
                 },
                 data: {
                     plan_id: planId,
@@ -315,10 +316,14 @@ class Egnyte {
      * @param numOfUsers how many licenses to assign to customer
      * @returns response object
      */
-    async updateCustomerPowerUsers(customerId: string, numOfUsers: number): Promise<any> {
+    async updateCustomerPowerUsers(
+        customerId: string,
+        numOfUsers: number,
+        autoAddToPool?: boolean,
+    ): Promise<any> {
         customerId = customerId.toLowerCase()
         const customer = await this.getOneCustomer(customerId)
-        if (customer.powerUsers.available <= 0)
+        if (customer.powerUsers.available <= 0 && !autoAddToPool)
             throw new Error('No available licenses on customers reseller plan.')
         if (numOfUsers < customer.powerUsers.used && this._config.forceLicenseChange !== true) {
             const response: EgnyteUpdateResponse = {
@@ -332,6 +337,19 @@ class Egnyte {
                 message: `customerId ${customerId} is already set to ${numOfUsers} power users. Did not modify.`,
             }
             return response
+        }
+        if (autoAddToPool) {
+            const plans = await this.getPlans()
+            const { planId, totalPowerUsers, availablePowerUsers } = plans.find(
+                (e: any) => e.planId === customer.planId,
+            )
+            const usersNeeded = numOfUsers - customer.powerUsers.total
+            if (usersNeeded > availablePowerUsers) {
+                const licensesToAdd = Math.ceil((usersNeeded - availablePowerUsers) / 5) * 5
+                const updatedLicenesTotal = licensesToAdd + totalPowerUsers
+
+                await this.UpdatePowerUserLicensing(planId, updatedLicenesTotal)
+            }
         }
         const { authCookie, csrfToken } = await this._authenticate()
 
