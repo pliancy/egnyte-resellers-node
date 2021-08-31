@@ -60,4 +60,61 @@ describe('Egnyte', () => {
             })
         })
     })
+
+    describe('public methods', () => {
+        it('returns null given customer does not have egnyte protect', async () => {
+            jest.spyOn(egnyte, '_authenticate' as never).mockResolvedValue({
+                authCookie: 'authCookie',
+                csrfToken: 'csrfToken',
+            } as never)
+            jest.spyOn(egnyte, '_egnyteRequest' as never).mockResolvedValue({
+                data: [
+                    {
+                        protectawesomecustomer: {
+                            storage_stats: {},
+                        },
+                    },
+                ],
+            } as never)
+            await expect(
+                egnyte.getCustomerProtectPlanUsage('SOMEOTHERCUSTOMER'),
+            ).resolves.toBeNull()
+        })
+
+        it('gets protect plan usage', async () => {
+            const storage_stats = { Used: 100, Unused: 200, Available: 100 }
+            jest.spyOn(egnyte, '_authenticate' as never).mockResolvedValue({
+                authCookie: 'authCookie',
+                csrfToken: 'csrfToken',
+            } as never)
+            jest.spyOn(egnyte, '_egnyteRequest' as never).mockResolvedValue({
+                data: [
+                    {
+                        protectawesomecustomer: {
+                            storage_stats,
+                        },
+                    },
+                ],
+            } as never)
+            await expect(egnyte.getCustomerProtectPlanUsage('AWESOMECUSTOMER')).resolves.toEqual(
+                storage_stats,
+            )
+        })
+
+        it('gets all protect plans', async () => {
+            const data = [
+                {
+                    protectawesomecustomer: {
+                        storage_stats: { Used: 100, Unused: 200, Available: 100 },
+                    },
+                },
+            ]
+            jest.spyOn(egnyte, '_authenticate' as never).mockResolvedValue({
+                authCookie: 'authCookie',
+                csrfToken: 'csrfToken',
+            } as never)
+            jest.spyOn(egnyte, '_egnyteRequest' as never).mockResolvedValue({ data } as never)
+            await expect(egnyte.getAllProtectPlans()).resolves.toEqual(data)
+        })
+    })
 })
