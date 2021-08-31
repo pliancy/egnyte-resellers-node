@@ -2,7 +2,7 @@ import qs from 'querystring'
 import axios, { AxiosRequestConfig } from 'axios'
 import cheerio from 'cheerio'
 
-interface EgnyteCustomer {
+export interface EgnyteCustomer {
     customerEgnyteId: string
     planId: string
     powerUsers: {
@@ -19,27 +19,37 @@ interface EgnyteCustomer {
     }
 }
 
-interface EgnyteUpdateResponse {
+export interface EgnyteUpdateResponse {
     result: string
     message: string
 }
 
-interface EgnyteConfig {
+export interface StorageStats {
+    Used: number
+    Unused: number
+    Available: number
+}
+
+export interface EgnyteConfig {
     /** the egnyte resellers portal username */
     username: string
     /** the egnyte resellers portal password */
     password: string
+    /**
+     * Protect planId
+     */
+    protectPlanId?: number
     /** timeout threshold in milliseconds */
     timeoutMs?: number
     forceLicenseChange?: boolean
 }
 
-interface UpdateCustomer {
+export interface UpdateCustomer {
     powerUsers?: { total?: number }
     storageGB?: { total?: number }
 }
 
-class Egnyte {
+export default class Egnyte {
     private readonly _config: EgnyteConfig
     private readonly httpConfig: AxiosRequestConfig
     private resellerId: string
@@ -283,6 +293,46 @@ class Egnyte {
     }
 
     /**
+     * retrieves protect plan usage for a customer
+     * @returns object containing the available usage data or null if the customer does not have protect
+     */
+    async getCustomerProtectPlanUsage(egnyteTenantId: string): Promise<StorageStats | null> {
+        const { authCookie, csrfToken } = await this._authenticate()
+        const { data: protectUsage } = await this._egnyteRequest(
+            `/msp/usage_stats/${this.resellerId}/${this._config.protectPlanId}/`,
+            {
+                headers: { cookie: authCookie, 'X-CSRFToken': csrfToken },
+            },
+        )
+
+        const id = `protect${egnyteTenantId.toLowerCase()}`
+
+        for (const entry of protectUsage) {
+            if (Object.keys(entry)[0] === id) {
+                return entry[id].storage_stats
+            }
+        }
+
+        return null
+    }
+
+    /**
+     * retrieves all protect plans
+     * @returns array containing the available plans
+     */
+    async getAllProtectPlans(): Promise<StorageStats[]> {
+        const { authCookie, csrfToken } = await this._authenticate()
+        const { data: protectUsage } = await this._egnyteRequest(
+            `/msp/usage_stats/${this.resellerId}/${this._config.protectPlanId}/`,
+            {
+                headers: { cookie: authCookie, 'X-CSRFToken': csrfToken },
+            },
+        )
+
+        return protectUsage
+    }
+
+    /**
      * Updates a plan's power user licensing count. This will result in a billing change from egnyte. Must be increased in increments of 5
      * @param planId the planId to update licensing for
      * @param newTotalLicenses the new total in increments of 5. Use getPlans() to find current total for given plan
@@ -436,5 +486,3 @@ class Egnyte {
         }
     }
 }
-
-export = Egnyte
