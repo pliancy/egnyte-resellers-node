@@ -13,7 +13,7 @@
   "devDependencies": {
     "@pliancy/eslint-config-ts": "0.0.5",
     "@pliancy/semantic-release-config-npm": "2.1.0",
-    "@types/jest": "26.0.24",
+    "@types/jest": "27.0.2",
     "@types/node": "14.17.5",
     "commitizen": "4.2.4",
     "cpy-cli": "^3.1.1",
