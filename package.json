@@ -11,7 +11,7 @@
   },
   "description": "Library for managing things against the undocumented egnyte resellers API.",
   "devDependencies": {
-    "@pliancy/eslint-config-ts": "0.0.5",
+    "@pliancy/eslint-config-ts": "1.1.0",
     "@pliancy/semantic-release-config-npm": "2.1.0",
     "@types/jest": "26.0.24",
     "@types/node": "14.17.5",
