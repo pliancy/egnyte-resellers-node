@@ -11,14 +11,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.ACCESS_TOKEN }}
       - name: Setup Node.js
         uses: actions/setup-node@v1
         with:
-          node-version: 14
+          node-version: 20
       - name: Install dependencies
         run: yarn
       - name: Build

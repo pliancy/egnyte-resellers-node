@@ -1,6 +1,8 @@
-import qs from 'querystring'
-import axios, { AxiosRequestConfig } from 'axios'
+import * as qs from 'querystring'
 import cheerio from 'cheerio'
+import { HttpCookieAgent, HttpsCookieAgent } from 'http-cookie-agent/http'
+import { CookieJar } from 'tough-cookie'
+import axios, { AxiosRequestConfig } from 'axios'
 
 export interface EgnyteCustomer {
     customerEgnyteId: string
@@ -70,9 +72,12 @@ export default class Egnyte {
         const ms = this._config.timeoutMs ?? -1
         const n = parseInt(ms as any)
         const timeout = !isNaN(n) && Math.abs(n) > 1 ? n : 20000
+        const jar = new CookieJar()
         this.httpConfig = {
             baseURL: 'https://resellers.egnyte.com',
             timeout,
+            httpAgent: new HttpCookieAgent({ cookies: { jar } }),
+            httpsAgent: new HttpsCookieAgent({ cookies: { jar } }),
         }
         this.resellerId = ''
     }
@@ -97,7 +102,8 @@ export default class Egnyte {
         const csrfMiddlewareToken = html('[name=csrfmiddlewaretoken]').val()
 
         // Regex cookies to get csrfToken
-        const csrfToken = res.headers['set-cookie']
+        const cookies = (res?.headers as any)['set-cookie'] ?? []
+        const csrfToken = cookies
             .find((e: string) => e.includes('csrftoken'))
             .match(/csrftoken=(.*); expires/)[1]
         if (!csrfMiddlewareToken || !csrfToken)
