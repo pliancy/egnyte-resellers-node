@@ -1,8 +1,8 @@
 import * as qs from 'querystring'
 import cheerio from 'cheerio'
-import {HttpCookieAgent, HttpsCookieAgent} from "http-cookie-agent/http";
-import {CookieJar} from "tough-cookie";
-import axios, {AxiosRequestConfig} from "axios";
+import { HttpCookieAgent, HttpsCookieAgent } from 'http-cookie-agent/http'
+import { CookieJar } from 'tough-cookie'
+import axios, { AxiosRequestConfig } from 'axios'
 
 export interface EgnyteCustomer {
     customerEgnyteId: string
