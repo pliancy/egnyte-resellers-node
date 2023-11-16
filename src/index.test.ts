@@ -51,7 +51,7 @@ describe('Egnyte', () => {
                     ({
                         data,
                         headers: { 'set-cookie': [`csrftoken=${csrfToken}; expires=Some Date;`] },
-                    } as never),
+                    }) as never,
             )
             let result = await egnyte['_getCsrfTokens']()
             return expect(result).toEqual({
