@@ -87,8 +87,7 @@ export default class Egnyte {
             ...this.httpConfig,
             ...(axiosOptions ?? {}),
         }
-        const res = await axios(url, httpOptions)
-        return res
+        return axios(url, httpOptions)
     }
 
     /**
