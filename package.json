@@ -9,7 +9,7 @@
     "axios": "1.7.2",
     "cheerio": "1.0.0-rc.12",
     "http-cookie-agent": "6.0.5",
-    "tough-cookie": "4.1.4"
+    "tough-cookie": "5.0.0-rc.2"
   },
   "description": "Library for managing things against the undocumented egnyte resellers API.",
   "devDependencies": {
