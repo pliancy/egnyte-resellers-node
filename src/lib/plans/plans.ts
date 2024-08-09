@@ -8,6 +8,7 @@ export class Plans extends Base {
 
     /**
      * retrieves available global licensing for both user and storage that aren't assigned to customers
+     * This will filter out any failed plans whose calls to the API return an error
      * @returns object containing the available user and storage data
      */
     async getPlans(): Promise<any> {
@@ -15,41 +16,55 @@ export class Plans extends Base {
         const planIds = await this._getAllPlanIds(authCookie)
 
         return Promise.all(
-            planIds.map(async (id) => {
-                const [planDataRes, planPowerUserDataRes] = await Promise.all([
-                    this.http.get<[string, UsageStats][]>(
-                        `/msp/usage_stats/${this.resellerId}/${id}/`,
-                        {
-                            headers: { cookie: authCookie, 'X-CSRFToken': csrfToken },
-                        },
-                    ),
-                    this.http.get(`/msp/get_plan_pu_data/${this.resellerId}/${id}/`, {
-                        headers: { cookie: authCookie, 'X-CSRFToken': csrfToken },
-                    }),
-                ])
-
-                const planData = planDataRes.data
-                const planPowerUserData = planPowerUserDataRes.data
-
-                let ref = {} as UsageStats
-                if (planData.length > 0) {
-                    const entries = Object.entries(planData[0] ?? [])
-                    if (entries.length > 0) {
-                        ref = (entries[0] ?? [])[1] as UsageStats
+            planIds
+                .map(async (id) => {
+                    let planDataRes: any
+                    let planPowerUserDataRes: any
+                    try {
+                        ;[planDataRes, planPowerUserDataRes] = await Promise.all([
+                            this.http.get<[string, UsageStats][]>(
+                                `/msp/usage_stats/${this.resellerId}/${id}/`,
+                                {
+                                    headers: {
+                                        cookie: authCookie,
+                                        'X-CSRFToken': csrfToken,
+                                    },
+                                },
+                            ),
+                            this.http.get(`/msp/get_plan_pu_data/${this.resellerId}/${id}/`, {
+                                headers: {
+                                    cookie: authCookie,
+                                    'X-CSRFToken': csrfToken,
+                                },
+                            }),
+                        ])
+                    } catch (e) {
+                        return
                     }
-                }
 
-                return {
-                    planId: id,
-                    totalPowerUsers: planPowerUserData?.purchased,
-                    usedPowerUsers: planPowerUserData?.purchased
-                        ? planPowerUserData?.purchased - ref.power_user_stats?.Available
-                        : undefined,
-                    availablePowerUsers: ref.power_user_stats?.Available,
-                    availableStorage: ref.storage_stats?.Available,
-                    customers: planData.map((customer: object) => Object.keys(customer)[0]),
-                }
-            }),
+                    const planData = planDataRes.data
+                    const planPowerUserData = planPowerUserDataRes.data
+
+                    let ref = {} as UsageStats
+                    if (planData.length > 0) {
+                        const entries = Object.entries(planData[0] ?? [])
+                        if (entries.length > 0) {
+                            ref = (entries[0] ?? [])[1] as UsageStats
+                        }
+                    }
+
+                    return {
+                        planId: id,
+                        totalPowerUsers: planPowerUserData?.purchased,
+                        usedPowerUsers: planPowerUserData?.purchased
+                            ? planPowerUserData?.purchased - ref.power_user_stats?.Available
+                            : undefined,
+                        availablePowerUsers: ref.power_user_stats?.Available,
+                        availableStorage: ref.storage_stats?.Available,
+                        customers: planData.map((customer: object) => Object.keys(customer)[0]),
+                    }
+                })
+                .filter((e) => e),
         )
     }
 
