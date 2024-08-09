@@ -23,6 +23,7 @@ export class Customers extends Base {
 
     /**
      * retrieves all customer data from multiple egnyte resellers API endpoints and models it to be actually readable
+     * this will skip any customers whose plan throws an error
      * @returns array of customer objects containing useful stuff
      */
     async getAllCustomers(): Promise<EgnyteCustomer[]> {
@@ -31,13 +32,20 @@ export class Customers extends Base {
 
         const customers = []
         for (const planId of planIds) {
-            const usageStatsRes = await this.http.get(
-                `/msp/usage_stats/${this.resellerId}/${planId}/`,
-                {
-                    headers: { cookie: authCookie, 'X-CSRFToken': csrfToken },
-                },
-            )
-            for (const customer of usageStatsRes.data) {
+            let usageStats: EgnyteCustomer[]
+            try {
+                const res = await this.http.get(`/msp/usage_stats/${this.resellerId}/${planId}/`, {
+                    headers: {
+                        cookie: authCookie,
+                        'X-CSRFToken': csrfToken,
+                    },
+                })
+                usageStats = res.data
+            } catch (e) {
+                continue
+            }
+
+            for (const customer of usageStats) {
                 const [customerEgnyteId, ref] = Object.entries(customer)[0] as [string, UsageStats]
 
                 const obj: EgnyteCustomer = {
