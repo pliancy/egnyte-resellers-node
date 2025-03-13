@@ -7,6 +7,7 @@ import {
     Features,
     FeatureStat,
     Plans,
+    ResourceStats,
     StorageStats,
     UpdateCustomer,
     UsageStats,
@@ -22,16 +23,26 @@ export class Customers extends Base {
     }
 
     /**
-     * retrieves all customer data from multiple egnyte resellers API endpoints and models it to be actually readable
-     * this will skip any customers whose plan throws an error
-     * @returns array of customer objects containing useful stuff
+     * Retrieves all customer data from multiple Egnyte resellers API endpoints and transforms it
+     * into a readable format. Plans that throw errors during retrieval will be skipped but logged.
+     *
+     * @returns Promise resolving to an array of structured customer objects
      */
     async getAllCustomers(): Promise<EgnyteCustomer[]> {
+        // Authenticate and retrieve necessary tokens
         const { authCookie, csrfToken } = await this.authenticate()
+
+        // Retrieve all plan IDs
         const planIds = await this.plans._getAllPlanIds(authCookie)
 
-        const customers = []
+        const customers: EgnyteCustomer[] = []
+        let processedCount = 0
+
+        // Process each plan sequentially
         for (const planId of planIds) {
+            processedCount++
+
+            // Fetch usage statistics for current plan
             let usageStats: EgnyteCustomer[]
             try {
                 const res = await this.http.get(`/msp/usage_stats/${this.resellerId}/${planId}/`, {
@@ -41,58 +52,96 @@ export class Customers extends Base {
                     },
                 })
                 usageStats = res.data
-            } catch (e) {
-                continue
+            } catch (error) {
+                continue // Skip this plan and continue with the next one
             }
 
+            // Transform each customer's data
             for (const customer of usageStats) {
-                const [customerEgnyteId, ref] = Object.entries(customer)[0] as [string, UsageStats]
+                // Extract customer ID and stats from the customer object
+                const entries = Object.entries(customer)
+                if (entries.length === 0) {
+                    continue
+                }
 
+                const [customerEgnyteId, ref] = entries[0] as [string, UsageStats]
+
+                // Create structured customer object with resource usage stats
                 const obj: EgnyteCustomer = {
                     customerEgnyteId,
                     planId,
-                    powerUsers: {
-                        total: ref.power_user_stats.Used + ref.power_user_stats.Unused,
-                        used: ref.power_user_stats.Used,
-                        available: ref.power_user_stats.Available,
-                        free: ref.power_user_stats.Unused,
-                    },
-                    storageGB: {
-                        total: ref.storage_stats.Used + ref.storage_stats.Unused,
-                        used: ref.storage_stats.Used,
-                        available: ref.storage_stats.Available,
-                        free: ref.storage_stats.Unused,
-                    },
-                    features: {} as Features,
-                }
-
-                // add any features present in ref.feature_stats to obj.features, transforming to
-                // camelCase and adding the calculation for totalStandardUserPacks
-                for (const k in ref.feature_stats) {
-                    const key = k as FeatureStat
-                    const mappedKey = FeatureMap.get(key) as Feature
-
-                    if (mappedKey) {
-                        obj.features[mappedKey] = ref.feature_stats[key]
-                    } else {
-                        const camelCasedKey = this.toCamelCase(key) as Feature
-                        obj.features[camelCasedKey] = ref.feature_stats[key]
-                    }
-
-                    // Standard Users are charged in packs of 5 and the total number of packs is equal
-                    // to addition_su - total_power_users. Rounding up to the nearest integer (e.g.,
-                    // 3.0 -> 3, 3.1 -> 4
-                    obj.features.totalStandardUserPacks = Math.ceil(
-                        (ref.feature_stats.additional_su - ref.feature_stats.total_power_users) / 5,
-                    )
+                    powerUsers: this.extractResourceStats(ref.power_user_stats),
+                    storageGB: this.extractResourceStats(ref.storage_stats),
+                    features: this.processFeatures(ref.feature_stats),
                 }
 
                 customers.push(obj)
             }
+
+            // Apply rate limiting with exponential backoff
+            const delay = this.calculateBackoff(processedCount, this.config.backoffDelay ?? 1000)
+            await this.delay(delay)
         }
+
         return customers
     }
 
+    /**
+     * Transforms resource statistics into a standardized format
+     */
+    private extractResourceStats(stats: any): ResourceStats {
+        return {
+            total: stats.Used + stats.Unused,
+            used: stats.Used,
+            available: stats.Available,
+            free: stats.Unused,
+        }
+    }
+
+    /**
+     * Processes feature statistics and applies necessary transformations
+     */
+    private processFeatures(featureStats: Record<FeatureStat, number>): Features {
+        const features = {} as Features
+
+        // Process each feature statistic
+        for (const [key, value] of Object.entries(featureStats)) {
+            const typedKey = key as FeatureStat
+
+            // Use predefined mapping if available, otherwise transform to camelCase
+            const mappedKey = FeatureMap.get(typedKey) as Feature
+            const targetKey = mappedKey || (this.toCamelCase(typedKey) as Feature)
+
+            // Assign value to the appropriate key
+            features[targetKey] = value
+        }
+
+        // Calculate standard user packs - special calculation required by business logic
+        features.totalStandardUserPacks = Math.ceil(
+            (featureStats.additional_su - featureStats.total_power_users) / 5,
+        )
+
+        return features
+    }
+
+    /**
+     * Implements exponential backoff for rate limiting
+     */
+    private calculateBackoff(attempt: number, baseDelay: number): number {
+        const maxDelay = 10000 // Maximum delay of 10 seconds
+        const calculatedDelay = Math.min(
+            baseDelay * Math.pow(1.5, attempt - 1), // Exponential increase
+            maxDelay,
+        )
+        return calculatedDelay
+    }
+
+    /**
+     * Helper method to pause execution for specified milliseconds
+     */
+    private delay(ms: number): Promise<void> {
+        return new Promise((resolve) => setTimeout(resolve, ms))
+    }
     /**
      * retrieves one customer's data from multiple egnyte resellers API endpoints and models it to be actually readable
      * @param customerId the egnyte customerId you want to return data on
@@ -183,44 +232,61 @@ export class Customers extends Base {
      * Updates a customer with a new power user count
      * @param customerId customer 'domain' key from getAllPowerUsers()
      * @param numOfUsers how many licenses to assign to customer
-     * @param autoAddToPool
-     * @returns response object
+     * @param autoAddToPool whether to automatically add licenses to the pool if needed
+     * @returns response object with result and message
      */
     async updateCustomerPowerUsers(
         customerId: string,
         numOfUsers: number,
         autoAddToPool?: boolean,
-    ): Promise<any> {
+    ): Promise<EgnyteUpdateResponse> {
+        // Normalize customer ID to lowercase
         customerId = customerId.toLowerCase()
+
+        // Retrieve current customer data
         const customer = await this.getOneCustomer(customerId)
-        if (customer.powerUsers.available <= 0 && !autoAddToPool)
-            throw new Error('No available licenses on customers reseller plan.')
-        if (numOfUsers < customer.powerUsers.used && this.config.forceLicenseChange !== true) {
-            return {
-                result: 'NO_CHANGE',
-                message: `customerId ${customerId} currently has ${customer.powerUsers.used} power users in use. Refusing to set to ${numOfUsers} power users.`,
-            }
-        } else if (numOfUsers === customer.powerUsers.total) {
+
+        // Early return if no change is needed
+        if (numOfUsers === customer.powerUsers.total) {
             return {
                 result: 'NO_CHANGE',
                 message: `customerId ${customerId} is already set to ${numOfUsers} power users. Did not modify.`,
             }
         }
-        if (autoAddToPool) {
-            const plans = await this.plans.getPlans()
-            const { planId, totalPowerUsers, availablePowerUsers } = plans.find(
-                (e: any) => e.planId === customer.planId,
-            )
-            const usersNeeded = numOfUsers - customer.powerUsers.total
-            if (usersNeeded > availablePowerUsers) {
-                const licensesToAdd = Math.ceil((usersNeeded - availablePowerUsers) / 5) * 5
-                const updatedLicenesTotal = licensesToAdd + totalPowerUsers
 
-                await this.plans.UpdatePowerUserLicensing(planId, updatedLicenesTotal)
+        // Check if requested change would reduce below currently used licenses
+        if (numOfUsers < customer.powerUsers.used && this.config.forceLicenseChange !== true) {
+            return {
+                result: 'NO_CHANGE',
+                message: `customerId ${customerId} currently has ${customer.powerUsers.used} power users in use. Refusing to set to ${numOfUsers} power users.`,
             }
         }
+
+        // Check if there are available licenses for an increase
+        const licensesNeeded = numOfUsers - customer.powerUsers.total
+        if (
+            licensesNeeded > 0 &&
+            customer.powerUsers.available < licensesNeeded &&
+            !autoAddToPool
+        ) {
+            throw new Error(
+                `Not enough available licenses on customers reseller plan. Need ${licensesNeeded} but only ${customer.powerUsers.available} are available.`,
+            )
+        }
+
+        // Handle auto-adding licenses to the pool if needed
+        if (autoAddToPool && licensesNeeded > 0) {
+            await this.ensureSufficientLicensesInPool(
+                customer.planId,
+                licensesNeeded,
+                customer.powerUsers.available,
+            )
+        }
+
+        // Get authentication tokens
         const { authCookie, csrfToken } = await this.authenticate()
 
+        // Make the API request
         const res = await this.http.post(
             `/msp/change_power_users/${this.resellerId}/`,
             {
@@ -237,24 +303,60 @@ export class Customers extends Base {
                 validateStatus: (status) => (status >= 200 && status <= 303) || status === 400,
             },
         )
+
         const result = res.data
-        const response: EgnyteUpdateResponse = {
-            result: 'SUCCESS',
-            message: `Updated customerId ${customerId} from ${customer.powerUsers.total} to ${numOfUsers} power users successfully.`,
-        }
+
+        // Check results
         if (result.msg === 'Plan updated successfully!') {
-            return response
+            return {
+                result: 'SUCCESS',
+                message: `Updated customerId ${customerId} from ${customer.powerUsers.total} to ${numOfUsers} power users successfully.`,
+            }
         } else if (
             result.msg === 'CFS plan upgrade failed. Please contact support.' &&
             this.config.forceLicenseChange &&
             res.status === 400
         ) {
-            return response
+            return {
+                result: 'SUCCESS',
+                message: `Updated customerId ${customerId} from ${customer.powerUsers.total} to ${numOfUsers} power users successfully with force option.`,
+            }
         } else {
-            throw new Error(result.msg)
+            throw new Error(result.msg || 'Unknown error updating power users')
         }
     }
 
+    /**
+     * Ensures there are enough licenses in the pool for the requested change
+     * @param planId the ID of the plan to modify
+     * @param licensesNeeded number of additional licenses needed
+     * @param availableLicenses current number of available licenses in the pool
+     * @private
+     */
+    private async ensureSufficientLicensesInPool(
+        planId: string,
+        licensesNeeded: number,
+        availableLicenses: number,
+    ): Promise<void> {
+        if (licensesNeeded <= availableLicenses) {
+            return // Already have enough licenses
+        }
+
+        const plans = await this.plans.getPlans()
+        const plan = plans.find((e: any) => e.planId === planId)
+
+        if (!plan) {
+            throw new Error(`Could not find plan with ID ${planId}`)
+        }
+
+        const additionalLicensesNeeded = licensesNeeded - availableLicenses
+
+        // Licenses are added in packs of 5, rounded up
+        const licensesToAdd = Math.ceil(additionalLicensesNeeded / 5) * 5
+        const updatedLicensesTotal = licensesToAdd + plan.totalPowerUsers
+
+        await this.plans.UpdatePowerUserLicensing(planId, updatedLicensesTotal)
+    }
     /**
      * retrieves protect plan usage for a customer
      * @returns object containing the available usage data or null if the customer does not have protect
