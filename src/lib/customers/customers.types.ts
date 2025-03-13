@@ -19,3 +19,10 @@ export interface UpdateCustomer {
     powerUsers?: { total?: number }
     storageGB?: { total?: number }
 }
+
+export interface ResourceStats {
+    total: number
+    used: number
+    available: number
+    free: number
+}

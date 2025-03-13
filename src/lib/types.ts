@@ -10,6 +10,8 @@ export interface EgnyteConfig {
     /** timeout threshold in milliseconds */
     timeoutMs?: number
     forceLicenseChange?: boolean
+    /** delay between API calls in milliseconds */
+    backoffDelay?: number
 }
 
 export interface EgnyteUpdateResponse {
