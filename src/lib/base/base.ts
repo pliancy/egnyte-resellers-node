@@ -10,6 +10,21 @@ export class Base {
 
     resellerId!: string
 
+    private _extractTrailingNumericIdFromLocation(location: string): string | null {
+        // Location may be relative ("/msp/plan/12891/") or absolute ("https://.../msp/plan/12891/").
+        // We want the trailing numeric segment.
+        const path = (() => {
+            try {
+                return new URL(location, 'https://resellers.egnyte.com').pathname
+            } catch {
+                return location
+            }
+        })()
+
+        const match = path.match(/\/(\d+)\/?$/)
+        return match?.[1] ?? null
+    }
+
     constructor(readonly config: EgnyteConfig) {
         if (!config.username || !config.password) {
             throw new Error('missing config values username or password')
@@ -80,7 +95,12 @@ export class Base {
         if (res.status === 302) {
             const location = res.headers.location
             if (!location) throw new Error('unable to find location header in response')
-            const resellerId = location.split('/')[5]
+            const resellerId = this._extractTrailingNumericIdFromLocation(location)
+            if (!resellerId) {
+                throw new Error(
+                    `unable to parse resellerId from location header: ${JSON.stringify(location)}`,
+                )
+            }
             this.resellerId = resellerId
             return resellerId
         } else {

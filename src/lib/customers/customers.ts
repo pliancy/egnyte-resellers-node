@@ -33,7 +33,8 @@ export class Customers extends Base {
         const { authCookie, csrfToken } = await this.authenticate()
 
         // Retrieve all plan IDs
-        const planIds = await this.plans._getAllPlanIds(authCookie)
+        const cookie = `${authCookie}; csrftoken=${csrfToken};`
+        const planIds = await this.plans._getAllPlanIds(cookie)
 
         const customers: EgnyteCustomer[] = []
         let processedCount = 0
@@ -47,7 +48,7 @@ export class Customers extends Base {
             try {
                 const res = await this.http.get(`/msp/usage_stats/${this.resellerId}/${planId}/`, {
                     headers: {
-                        cookie: authCookie,
+                        cookie: cookie,
                         'X-CSRFToken': csrfToken,
                     },
                 })
