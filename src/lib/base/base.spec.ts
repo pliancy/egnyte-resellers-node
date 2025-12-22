@@ -90,6 +90,17 @@ describe('Base', () => {
             }
         })
 
+        it('fails given missing set-cookie header', async () => {
+            jest.spyOn(base.http, 'post').mockResolvedValue({
+                status: 302,
+                headers: {},
+            })
+
+            await expect(base.authenticate()).rejects.toEqual(
+                new Error('unable to find set-cookie header in response'),
+            )
+        })
+
         it('sets the resellerId and returns the authCookie and csrfToken', async () => {
             jest.spyOn(base.http, 'post').mockResolvedValue({
                 status: 302,
@@ -119,7 +130,80 @@ describe('Base', () => {
         })
     })
 
+    describe('setResellerId', () => {
+        beforeEach(() => {
+            base = new Base(config)
+        })
+
+        it('fails given missing authCookie', async () => {
+            await expect(base.setResellerId('' as any)).rejects.toEqual(
+                new Error('missing authCookie'),
+            )
+        })
+
+        it('fails given a non-302 status', async () => {
+            jest.spyOn(base.http, 'get').mockResolvedValue({ status: 200 })
+            await expect(base.setResellerId('authCookie')).rejects.toEqual(
+                new Error('an error occurred attempting to get the resellerId'),
+            )
+        })
+
+        it('fails given missing location header', async () => {
+            jest.spyOn(base.http, 'get').mockResolvedValue({
+                status: 302,
+                headers: {},
+            })
+
+            await expect(base.setResellerId('authCookie')).rejects.toEqual(
+                new Error('unable to find location header in response'),
+            )
+        })
+
+        it('parses resellerId from a relative location header', async () => {
+            jest.spyOn(base.http, 'get').mockResolvedValue({
+                status: 302,
+                headers: { location: '/msp/plan/12891/' },
+            })
+
+            await expect(base.setResellerId('authCookie')).resolves.toBe('12891')
+            expect(base.resellerId).toBe('12891')
+
+            const [path, conf] = (base.http.get as Mock).mock.calls[0]
+            expect(path).toBe('/customer/browse/')
+            expect(conf.headers).toEqual({ cookie: 'authCookie' })
+            expect(conf.maxRedirects).toBe(0)
+            expect(conf.validateStatus).toBeInstanceOf(Function)
+        })
+
+        it('parses resellerId from an absolute location header', async () => {
+            jest.spyOn(base.http, 'get').mockResolvedValue({
+                status: 302,
+                headers: { location: 'https://resellers.egnyte.com/msp/plan/12891/' },
+            })
+
+            await expect(base.setResellerId('authCookie')).resolves.toBe('12891')
+            expect(base.resellerId).toBe('12891')
+        })
+
+        it('fails given a location header that does not end in a numeric id', async () => {
+            jest.spyOn(base.http, 'get').mockResolvedValue({
+                status: 302,
+                headers: { location: '/msp/plan/not-a-number/' },
+            })
+
+            await expect(base.setResellerId('authCookie')).rejects.toEqual(
+                new Error(
+                    'unable to parse resellerId from location header: "/msp/plan/not-a-number/"',
+                ),
+            )
+        })
+    })
+
     describe('_getCsrfTokens', () => {
+        beforeEach(() => {
+            base = new Base(config)
+        })
+
         it('gets CSRF tokens', async () => {
             const csrfMiddlewareToken = 'fec9a59a86510210de334ca4e251ed3d'
             const csrfToken = '12345'
