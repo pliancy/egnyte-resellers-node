@@ -52,7 +52,7 @@ export class Customers extends Base {
                         'X-CSRFToken': csrfToken,
                     },
                 })
-                usageStats = res.data
+                usageStats = Array.isArray(res.data) ? res.data : []
             } catch (error) {
                 continue // Skip this plan and continue with the next one
             }
