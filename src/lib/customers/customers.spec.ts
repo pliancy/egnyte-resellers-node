@@ -102,7 +102,9 @@ describe('Customers', () => {
             jest.spyOn(plans, '_getAllPlanIds').mockResolvedValue(['plan1'])
 
             // Mock API returning {} instead of []
-            const getSpy = jest.spyOn(customers.http, 'get').mockResolvedValueOnce({ data: {} } as any)
+            const getSpy = jest
+                .spyOn(customers.http, 'get')
+                .mockResolvedValueOnce({ data: {} } as any)
 
             const promise = customers.getAllCustomers()
             await jest.runAllTimersAsync()
@@ -120,7 +122,9 @@ describe('Customers', () => {
             jest.spyOn(plans, '_getAllPlanIds').mockResolvedValue(['plan1'])
 
             // Mock API returning []
-            const getSpy = jest.spyOn(customers.http, 'get').mockResolvedValueOnce({ data: [] } as any)
+            const getSpy = jest
+                .spyOn(customers.http, 'get')
+                .mockResolvedValueOnce({ data: [] } as any)
 
             const promise = customers.getAllCustomers()
             await jest.runAllTimersAsync()
@@ -373,7 +377,9 @@ describe('Customers', () => {
             jest.spyOn(plans, 'getPlans').mockResolvedValue([
                 { planId: 'plan1', totalPowerUsers: 50 },
             ])
-            const updateSpy = jest.spyOn(plans, 'UpdatePowerUserLicensing').mockResolvedValue([] as any)
+            const updateSpy = jest
+                .spyOn(plans, 'UpdatePowerUserLicensing')
+                .mockResolvedValue([] as any)
 
             // Need 10, have 2. Additional 8 needed. 8/5 rounded up is 2 packs of 5 = 10 licenses to add.
             // 10 + 50 = 60.
