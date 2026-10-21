@@ -28,8 +28,9 @@ describe('IndexBarrel', () => {
             // loop all files in directory
             const files = readdirSync(`${base}/${directory}`)
             for (const file of files) {
-                // ignore tests
+                // ignore tests and internal portal login helper
                 if (/\.spec/.test(file)) continue
+                if (file === 'portal-login.ts') continue
 
                 // get file name without extension
                 const fileWithoutExt = file.replace('.ts', '')

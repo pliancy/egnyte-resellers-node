@@ -1,4 +1,6 @@
 export * from './lib/types'
+export { loginResellerPortal } from './lib/base/portal-login'
+export type { PortalLoginOptions, PortalLoginResult } from './lib/base/portal-login'
 export { Egnyte } from './lib/egnyte'
 export { Base } from './lib/base/base'
 export { Customers } from './lib/customers/customers'
