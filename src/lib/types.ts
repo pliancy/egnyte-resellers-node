@@ -12,6 +12,10 @@ export interface EgnyteConfig {
     forceLicenseChange?: boolean
     /** delay between API calls in milliseconds */
     backoffDelay?: number
+    /** Run Playwright portal login headless (invisible reCAPTCHA). @default true */
+    portalHeadless?: boolean
+    /** Max wait for portal login + reCAPTCHA (ms). @default 60000 */
+    portalLoginTimeoutMs?: number
 }
 
 export interface EgnyteUpdateResponse {
