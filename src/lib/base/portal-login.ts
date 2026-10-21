@@ -76,10 +76,12 @@ async function loginHybridViaBrowserContext(
 
         await page.goto(PORTAL_LOGIN_URL, { waitUntil: 'load' })
         assertResellersOrigin(page.url())
-        await page.waitForLoadState('networkidle', { timeout: loginTimeoutMs }).catch(() => undefined)
+        await page
+            .waitForLoadState('networkidle', { timeout: loginTimeoutMs })
+            .catch(() => undefined)
 
         if (isSpaSignInUrl(page.url())) {
-            return completeSpaHybridLogin(
+            return await completeSpaHybridLogin(
                 context,
                 page,
                 options,
@@ -88,7 +90,7 @@ async function loginHybridViaBrowserContext(
             )
         }
 
-        return completeLegacyHybridLogin(
+        return await completeLegacyHybridLogin(
             context,
             page,
             options,
@@ -109,6 +111,16 @@ export function isSpaSignInUrl(url: string): boolean {
     }
 }
 
+/** @internal Exported for unit tests. */
+export function isPortalLoginPageUrl(url: string): boolean {
+    try {
+        const path = new URL(url).pathname
+        return path.startsWith('/auth/sign-in') || path.startsWith('/accounts/login')
+    } catch {
+        return url.includes('/auth/sign-in') || url.includes('/accounts/login')
+    }
+}
+
 async function completeSpaHybridLogin(
     context: BrowserContext,
     page: Page,
@@ -121,17 +133,16 @@ async function completeSpaHybridLogin(
         .first()
         .waitFor({ state: 'visible', timeout: loginTimeoutMs })
 
-    const csrfToken = (await context.cookies(PORTAL_ORIGIN)).find((c) => c.name === 'csrftoken')
-        ?.value
+    const csrfToken = (await context.cookies(PORTAL_ORIGIN)).find(
+        (c) => c.name === 'csrftoken',
+    )?.value
     if (!csrfToken) {
         throw new Error('Portal login preflight: missing csrftoken cookie on sign-in page.')
     }
 
-    const recaptchaToken = await obtainRecaptchaToken(
-        page,
-        loginTimeoutMs,
-        recaptchaSiteKeyHint,
-    )
+    const priorSessionValues = await snapshotPortalSessionValues(context)
+
+    const recaptchaToken = await obtainRecaptchaToken(page, loginTimeoutMs, recaptchaSiteKeyHint)
     if (!recaptchaToken) {
         throw new Error(
             'Portal login preflight: could not obtain reCAPTCHA token without submitting credentials. Set portalBrowserSubmitLogin only as a last resort.',
@@ -160,7 +171,7 @@ async function completeSpaHybridLogin(
         )
     }
 
-    return readPortalLoginResultFromContext(context)
+    return readPortalLoginResultFromContext(context, page, priorSessionValues)
 }
 
 async function completeLegacyHybridLogin(
@@ -170,17 +181,11 @@ async function completeLegacyHybridLogin(
     loginTimeoutMs: number,
     recaptchaSiteKeyHint?: string,
 ): Promise<PortalLoginResult> {
-    const { csrfMiddlewareToken, csrfToken } = await resolveLoginCsrf(
-        page,
-        context,
-        loginTimeoutMs,
-    )
+    const { csrfMiddlewareToken, csrfToken } = await resolveLoginCsrf(page, context, loginTimeoutMs)
 
-    const recaptchaToken = await obtainRecaptchaToken(
-        page,
-        loginTimeoutMs,
-        recaptchaSiteKeyHint,
-    )
+    const priorSessionValues = await snapshotPortalSessionValues(context)
+
+    const recaptchaToken = await obtainRecaptchaToken(page, loginTimeoutMs, recaptchaSiteKeyHint)
     if (!recaptchaToken) {
         throw new Error(
             'Portal login preflight: could not obtain reCAPTCHA token without submitting credentials. Set portalBrowserSubmitLogin only as a last resort.',
@@ -211,14 +216,57 @@ async function completeLegacyHybridLogin(
         )
     }
 
-    return readPortalLoginResultFromContext(context)
+    return readPortalLoginResultFromContext(context, page, priorSessionValues)
+}
+
+async function snapshotPortalSessionValues(
+    context: BrowserContext,
+): Promise<Record<string, string | undefined>> {
+    const cookies = await context.cookies(PORTAL_ORIGIN)
+    const values: Record<string, string | undefined> = {}
+    for (const name of PORTAL_SESSION_COOKIE_NAMES) {
+        values[name] = cookies.find((c) => c.name === name)?.value
+    }
+    return values
+}
+
+/** @internal Exported for unit tests. */
+export function findPortalSessionCookieAfterLogin(
+    cookies: { name: string; value: string }[],
+    pageUrl: string,
+    priorSessionValues: Record<string, string | undefined>,
+): { name: string; value: string } | undefined {
+    const onLoginPage = isPortalLoginPageUrl(pageUrl)
+    const session = findPortalSessionCookie(cookies, onLoginPage)
+    if (session?.value) {
+        return session
+    }
+    if (!onLoginPage) {
+        return undefined
+    }
+    for (const name of PORTAL_SESSION_COOKIE_NAMES) {
+        if (name === 'pbapp3sess') {
+            continue
+        }
+        const cookie = cookies.find((c) => c.name === name)
+        if (!cookie?.value) {
+            continue
+        }
+        const prior = priorSessionValues[name]
+        if (prior !== undefined && prior !== cookie.value) {
+            return cookie
+        }
+    }
+    return undefined
 }
 
 async function readPortalLoginResultFromContext(
     context: BrowserContext,
+    page: Page,
+    priorSessionValues: Record<string, string | undefined>,
 ): Promise<PortalLoginResult> {
     const cookies = await context.cookies(PORTAL_ORIGIN)
-    const session = findPortalSessionCookie(cookies, false)
+    const session = findPortalSessionCookieAfterLogin(cookies, page.url(), priorSessionValues)
     const csrf = cookies.find((c) => c.name === 'csrftoken')
 
     if (!session?.value) {
@@ -487,18 +535,20 @@ async function obtainRecaptchaToken(
                 return g.execute(key, { action: 'login' })
             }, siteKey)
             .catch(() => '')) ?? ''
-    if (executedToken) {
+    const fromExecute = executedToken.trim()
+    if (fromExecute) {
         const recaptchaInput = page.locator('input[name="recaptcha"], #id_recaptcha').first()
         await recaptchaInput
             .evaluate((el, token) => {
                 ;(el as { value: string }).value = token
-            }, executedToken)
+            }, fromExecute)
             .catch(() => undefined)
     }
 
-    await page
-        .waitForFunction(
-            `const selectors = [
+    if (!fromExecute) {
+        await page
+            .waitForFunction(
+                `const selectors = [
                 'input[name="recaptcha"]',
                 '#id_recaptcha',
                 '#g-recaptcha-response',
@@ -509,13 +559,16 @@ async function obtainRecaptchaToken(
                 if (el && el.value && el.value.length > 0) return true;
             }
             return false;`,
-            undefined,
-            { timeout: timeoutMs },
-        )
-        .catch(() => undefined)
+                undefined,
+                { timeout: timeoutMs },
+            )
+            .catch(() => undefined)
+    }
 
-    const token = await page.locator(RECAPTCHA_TOKEN_SELECTORS).first().inputValue().catch(() => '')
-    return token.trim()
+    const fromDom = (
+        await page.locator(RECAPTCHA_TOKEN_SELECTORS).first().inputValue().catch(() => '')
+    ).trim()
+    return fromDom || fromExecute
 }
 
 async function resolveRecaptchaSiteKeyFromPage(
@@ -534,7 +587,8 @@ async function resolveRecaptchaSiteKeyFromPage(
         }
     }
     const fromDom = await page
-        .evaluate<string | undefined>(`(() => {
+        .evaluate<string | undefined>(
+            `(() => {
             const el = document.querySelector('[data-sitekey]');
             const fromEl = el && el.getAttribute('data-sitekey');
             if (fromEl) return fromEl;
@@ -544,7 +598,8 @@ async function resolveRecaptchaSiteKeyFromPage(
                 if (match && match[1]) return match[1];
             }
             return undefined;
-        })()`)
+        })()`,
+        )
         .catch(() => undefined)
     return fromDom
 }
@@ -589,7 +644,9 @@ async function loginViaBrowserSubmit(options: PortalLoginOptions): Promise<Porta
 
         await page.goto(PORTAL_LOGIN_URL, { waitUntil: 'load' })
         assertResellersOrigin(page.url())
-        await page.waitForLoadState('networkidle', { timeout: loginTimeoutMs }).catch(() => undefined)
+        await page
+            .waitForLoadState('networkidle', { timeout: loginTimeoutMs })
+            .catch(() => undefined)
 
         const emailField = page
             .locator('#email, input[name="email"], input[name="username"], #id_username')

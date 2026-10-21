@@ -1,6 +1,7 @@
 import {
     assertResellersOrigin,
     findPortalSessionCookie,
+    findPortalSessionCookieAfterLogin,
     parseCsrfFromLoginHtml,
     isSpaSignInUrl,
     mergeLoginCsrfFields,
@@ -34,7 +35,9 @@ describe('isSpaSignInUrl', () => {
 describe('parseLoginErrorFromBody', () => {
     it('parses JSON API errors', () => {
         expect(
-            parseLoginErrorFromBody('{"code":"not_authenticated","message":"Invalid username or password."}'),
+            parseLoginErrorFromBody(
+                '{"code":"not_authenticated","message":"Invalid username or password."}',
+            ),
         ).toBe('Invalid username or password.')
     })
 })
@@ -78,7 +81,9 @@ describe('parseRecaptchaSiteKeyFromLoginHtml', () => {
 
 describe('assertResellersOrigin', () => {
     it('allows resellers.egnyte.com', () => {
-        expect(() => assertResellersOrigin('https://resellers.egnyte.com/accounts/login/')).not.toThrow()
+        expect(() =>
+            assertResellersOrigin('https://resellers.egnyte.com/accounts/login/'),
+        ).not.toThrow()
     })
 
     it('allows about:blank', () => {
@@ -86,7 +91,9 @@ describe('assertResellersOrigin', () => {
     })
 
     it('rejects other origins', () => {
-        expect(() => assertResellersOrigin('https://evil.example/phish')).toThrow(/unexpected origin/)
+        expect(() => assertResellersOrigin('https://evil.example/phish')).toThrow(
+            /unexpected origin/,
+        )
     })
 })
 
@@ -120,5 +127,46 @@ describe('findPortalSessionCookie', () => {
             name: 'sessionid',
             value: 'authenticated',
         })
+    })
+})
+
+describe('findPortalSessionCookieAfterLogin', () => {
+    const signInUrl = 'https://resellers.egnyte.com/auth/sign-in'
+
+    it('ignores unchanged anonymous sessionid while still on sign-in', () => {
+        const cookies = [
+            { name: 'sessionid', value: 'anonymous' },
+            { name: 'csrftoken', value: 'csrf' },
+        ]
+        expect(
+            findPortalSessionCookieAfterLogin(cookies, signInUrl, {
+                sessionid: 'anonymous',
+            }),
+        ).toBeUndefined()
+    })
+
+    it('accepts pbapp3sess on sign-in after login', () => {
+        const cookies = [
+            { name: 'sessionid', value: 'anonymous' },
+            { name: 'pbapp3sess', value: 'authenticated' },
+            { name: 'csrftoken', value: 'csrf' },
+        ]
+        expect(
+            findPortalSessionCookieAfterLogin(cookies, signInUrl, {
+                sessionid: 'anonymous',
+            }),
+        ).toEqual({ name: 'pbapp3sess', value: 'authenticated' })
+    })
+
+    it('accepts sessionid on sign-in when the value rotated', () => {
+        const cookies = [
+            { name: 'sessionid', value: 'authenticated' },
+            { name: 'csrftoken', value: 'csrf' },
+        ]
+        expect(
+            findPortalSessionCookieAfterLogin(cookies, signInUrl, {
+                sessionid: 'anonymous',
+            }),
+        ).toEqual({ name: 'sessionid', value: 'authenticated' })
     })
 })
