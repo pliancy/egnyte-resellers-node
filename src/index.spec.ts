@@ -30,7 +30,7 @@ describe('IndexBarrel', () => {
             for (const file of files) {
                 // ignore tests and internal portal login helper
                 if (/\.spec/.test(file)) continue
-                if (file === 'portal-login.ts') continue
+                if (file === 'portal-login.ts' || file === 'portal-login.spec.ts') continue
 
                 // get file name without extension
                 const fileWithoutExt = file.replace('.ts', '')

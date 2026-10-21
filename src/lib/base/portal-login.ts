@@ -18,8 +18,8 @@ export interface PortalLoginResult {
     csrfToken: string
 }
 
-/** Known Egnyte reseller portal session cookie names (legacy Django + current app). */
-const PORTAL_SESSION_COOKIE_NAMES = ['sessionid', 'pbapp3sess'] as const
+/** Authenticated app session first; anonymous Django `sessionid` is set on the login page. */
+const PORTAL_SESSION_COOKIE_NAMES = ['pbapp3sess', 'sessionid'] as const
 
 /**
  * Logs into the Egnyte reseller portal in a real browser so invisible reCAPTCHA can run.
@@ -72,7 +72,7 @@ export async function loginResellerPortal(options: PortalLoginOptions): Promise<
 
         await page.waitForLoadState('networkidle', { timeout: loginTimeoutMs }).catch(() => {})
 
-        const session = await pollForSessionCookie(context, loginTimeoutMs)
+        const session = await pollForSessionCookie(context, page, loginTimeoutMs)
         const csrf = (await context.cookies()).find((c) => c.name === 'csrftoken')
 
         if (!session?.value) {
@@ -101,10 +101,24 @@ export async function loginResellerPortal(options: PortalLoginOptions): Promise<
     }
 }
 
-function findPortalSessionCookie(
+/** @internal Exported for unit tests. */
+export function findPortalSessionCookie(
     cookies: { name: string; value: string }[],
+    onLoginPage: boolean,
 ): { name: string; value: string } | undefined {
+    const pbapp = cookies.find((c) => c.name === 'pbapp3sess')
+    if (pbapp?.value) {
+        return pbapp
+    }
+
+    if (onLoginPage) {
+        return undefined
+    }
+
     for (const name of PORTAL_SESSION_COOKIE_NAMES) {
+        if (name === 'pbapp3sess') {
+            continue
+        }
         const match = cookies.find((c) => c.name === name)
         if (match?.value) {
             return match
@@ -120,12 +134,14 @@ function findPortalSessionCookie(
 
 async function pollForSessionCookie(
     context: BrowserContext,
+    page: import('playwright').Page,
     timeoutMs: number,
 ): Promise<{ name: string; value: string } | undefined> {
     const deadline = Date.now() + timeoutMs
     while (Date.now() < deadline) {
         const cookies = await context.cookies(PORTAL_ORIGIN)
-        const session = findPortalSessionCookie(cookies)
+        const onLoginPage = page.url().includes('/accounts/login')
+        const session = findPortalSessionCookie(cookies, onLoginPage)
         if (session?.value) {
             return session
         }
@@ -154,6 +170,7 @@ async function waitForRecaptchaReady(
     await page
         .waitForFunction(
             "typeof grecaptcha !== 'undefined' && typeof grecaptcha.execute === 'function'",
+            undefined,
             { timeout: timeoutMs },
         )
         .catch(() => {
