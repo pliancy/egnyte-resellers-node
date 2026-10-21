@@ -24,9 +24,7 @@ const PORTAL_SESSION_COOKIE_NAMES = ['sessionid', 'pbapp3sess'] as const
 /**
  * Logs into the Egnyte reseller portal in a real browser so invisible reCAPTCHA can run.
  */
-export async function loginResellerPortal(
-    options: PortalLoginOptions,
-): Promise<PortalLoginResult> {
+export async function loginResellerPortal(options: PortalLoginOptions): Promise<PortalLoginResult> {
     const headless = options.headless ?? true
     const loginTimeoutMs = options.loginTimeoutMs ?? 60_000
 
@@ -50,9 +48,11 @@ export async function loginResellerPortal(
 
         await waitForRecaptchaReady(page, loginTimeoutMs)
 
-        const submit = page.locator(
-            'button[type="submit"], input[type="submit"], button[name="login"], #login-button',
-        ).first()
+        const submit = page
+            .locator(
+                'button[type="submit"], input[type="submit"], button[name="login"], #login-button',
+            )
+            .first()
 
         const loginPost = page.waitForResponse(
             (response) =>
@@ -138,7 +138,12 @@ async function readLoginErrorText(page: import('playwright').Page): Promise<stri
     const locator = page.locator(
         '.errorlist, .alert-danger, .alert-error, [role="alert"], .invalid-feedback',
     )
-    const text = (await locator.first().textContent({ timeout: 2000 }).catch(() => null))?.trim()
+    const text = (
+        await locator
+            .first()
+            .textContent({ timeout: 2000 })
+            .catch(() => null)
+    )?.trim()
     return text || undefined
 }
 

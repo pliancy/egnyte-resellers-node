@@ -84,5 +84,4 @@ export class Base {
             throw new Error('an error occurred attempting to get the resellerId')
         }
     }
-
 }
