@@ -253,7 +253,10 @@ export function findPortalSessionCookieAfterLogin(
             continue
         }
         const prior = priorSessionValues[name]
-        if (prior !== undefined && prior !== cookie.value) {
+        if (prior === undefined) {
+            return cookie
+        }
+        if (prior !== cookie.value) {
             return cookie
         }
     }
@@ -566,7 +569,11 @@ async function obtainRecaptchaToken(
     }
 
     const fromDom = (
-        await page.locator(RECAPTCHA_TOKEN_SELECTORS).first().inputValue().catch(() => '')
+        await page
+            .locator(RECAPTCHA_TOKEN_SELECTORS)
+            .first()
+            .inputValue()
+            .catch(() => '')
     ).trim()
     return fromDom || fromExecute
 }

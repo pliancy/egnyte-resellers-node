@@ -169,4 +169,15 @@ describe('findPortalSessionCookieAfterLogin', () => {
             }),
         ).toEqual({ name: 'sessionid', value: 'authenticated' })
     })
+
+    it('accepts sessionid that first appears after SPA login', () => {
+        const cookies = [
+            { name: 'sessionid', value: 'authenticated' },
+            { name: 'csrftoken', value: 'csrf' },
+        ]
+        expect(findPortalSessionCookieAfterLogin(cookies, signInUrl, {})).toEqual({
+            name: 'sessionid',
+            value: 'authenticated',
+        })
+    })
 })
