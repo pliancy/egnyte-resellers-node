@@ -16,13 +16,15 @@ npm install egnyte-resellers
 yarn add egnyte-resellers
 ```
 
-Portal login uses **Playwright** (headless Chromium) so invisible reCAPTCHA on `resellers.egnyte.com` can complete. After install, download the browser once:
+Portal login uses **Playwright** for reCAPTCHA on the reseller sign-in page (`/auth/sign-in`, redirected from `/accounts/login/` in a real browser). Your **password is sent via the browser context HTTP client**, not typed into the DOM. After install, download the browser once:
 
 ```sh
 npx playwright install chromium
 ```
 
-Optional config: `portalHeadless` (default `true`), `portalLoginTimeoutMs` (default `60000`).
+On Linux containers, run the API as a **non-root** user so Chromium sandboxing works (`portalChromiumSandbox` defaults to `true`). Install OS deps with `npx playwright install --with-deps chromium` when needed.
+
+Optional config: `portalHeadless` (default `true`), `portalLoginTimeoutMs` (default `60000`), `portalChromiumSandbox` (default `true`). Avoid `portalBrowserSubmitLogin` unless hybrid login fails in your environment (types the password into the page).
 
 ---
 Basic usage:

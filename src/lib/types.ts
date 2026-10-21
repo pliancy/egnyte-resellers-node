@@ -16,6 +16,13 @@ export interface EgnyteConfig {
     portalHeadless?: boolean
     /** Max wait for portal login + reCAPTCHA (ms). @default 60000 */
     portalLoginTimeoutMs?: number
+    /** Enable Chromium OS sandbox for portal reCAPTCHA step. @default true */
+    portalChromiumSandbox?: boolean
+    /**
+     * @deprecated Types password into the portal page in Chromium. Default hybrid login avoids this.
+     * @default false
+     */
+    portalBrowserSubmitLogin?: boolean
 }
 
 export interface EgnyteUpdateResponse {

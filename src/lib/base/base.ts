@@ -52,6 +52,8 @@ export class Base {
             password: this.config.password,
             headless: this.config.portalHeadless,
             loginTimeoutMs: this.config.portalLoginTimeoutMs,
+            portalChromiumSandbox: this.config.portalChromiumSandbox,
+            portalBrowserSubmitLogin: this.config.portalBrowserSubmitLogin,
         })
         await this.setResellerId(authCookie)
         return { authCookie, csrfToken }
