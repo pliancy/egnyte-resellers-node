@@ -16,31 +16,44 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     steps:
+      # Generate a temporary app token for release and new version back
+      - name: Generate scoped GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
+        with:
+          client-id: ${{ vars.RELEASE_WRITE_BACK_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_WRITE_BACK_PRIVATE_KEY }}
+
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
-          token: ${{ secrets.PLIBOT_PAT }}
-          ref: 'main'
+          ref: main
+          token: ${{ steps.app-token.outputs.token }}
+
       - name: Setup Node.js
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version: 24
+          node-version: 26.13.1
+
       - name: Install dependencies
         run: yarn --ignore-scripts
+
       - name: Build
         run: yarn build
+
       - name: Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         # Run semantic release and copy updated package.json back to the root of the repo.
         run: |
           yarn semantic-release
           cp dist/package.json .
           npx pinst --enable
+
       # Commit changes to package.json and README.md
       - name: Auto Commit
-        uses: stefanzweifel/git-auto-commit-action@3ea6ae190baf489ba007f7c92608f33ce20ef04a # v4
+        uses: stefanzweifel/git-auto-commit-action@d0b01107b5db882071f96de5dd4b54961ea93f4c # v7
         env:
           SKIP_COMMITIZEN: true
         with:
